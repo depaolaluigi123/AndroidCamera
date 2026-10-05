@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lingua italiana – ricaricata al cambio lingua -->
+<resources>
+    <string name="app_name">AndroidCamera Webcam</string>
+    <string name="app_subtitle">Usa le telecamere del telefono come webcam per OBS</string>
+
+    <string name="section_connection">Modalita di collegamento</string>
+    <string name="mode_usb">USB Tethering</string>
+    <string name="mode_usb_desc">Attiva USB Tethering sul telefono, poi usa la webcam virtuale sul PC (selezionabile in OBS come una webcam reale)</string>
+    <string name="mode_usb_device">USB Device</string>
+    <string name="mode_usb_device_desc">Solo debug USB (niente tethering / Wi-Fi). Il driver sul PC riceve i frame binari via ADB ed espone una webcam V4L2 reale per OBS.</string>
+    <string name="mode_ip">IP (LAN)</string>
+    <string name="mode_ip_desc">Streaming via Wi-Fi usando l\'IP locale del dispositivo</string>
+
+    <string name="section_camera">Telecamera</string>
+    <string name="camera_picker_label">Telecamera da inviare</string>
+    <string name="camera_picker_label_short">Telecamera:</string>
+    <string name="camera_picker_hint">L\'elenco dipende dall\'hardware di questo telefono. Usa l\'anteprima live sopra per confermare l\'ottica.</string>
+    <string name="camera_facing_back">Posteriore</string>
+    <string name="camera_facing_front">Anteriore</string>
+    <string name="camera_facing_external">Esterna</string>
+    <string name="camera_facing_unknown">Telecamera</string>
+    <string name="camera_facing_back_short">posteriore</string>
+    <string name="camera_facing_front_short">anteriore</string>
+    <string name="camera_facing_external_short">esterna</string>
+    <string name="camera_facing_unknown_short">telecamera</string>
+    <string name="camera_option">%1$s %2$d (ID %3$s)</string>
+    <string name="camera_option_with_focal">%1$s %2$d · %3$s (ID %4$s)</string>
+    <string name="camera_in_use_short">%1$s %2$d (ID %3$s)</string>
+    <string name="camera_none_available">Nessuna telecamera trovata su questo dispositivo</string>
+
+    <string name="section_video">Qualita video</string>
+    <string name="format_yuv_hint">Streaming YUV a bassa latenza. Sul PC usa AndroidCameraLinuxGui (Abilita per OBS), poi in OBS scegli questo telefono dal nome.</string>
+    <string name="resolution_label">Risoluzione</string>
+    <string name="fps_label">Frame rate (FPS)</string>
+    <string name="fps_hint">Questo valore è una richiesta al sensore della fotocamera per ottenere il numero di frame al secondo scelto. Il sensore sceglie autonomamente il valore supportato più vicino, quindi il frame rate effettivo potrebbe essere leggermente diverso da quello selezionato.</string>
+    <string name="limit_fps_label">Limita FPS</string>
+    <string name="limit_fps_hint">Se spuntato, lo stream inviato al computer viene limitato al numero di FPS scelto sopra: gli eventuali frame extra prodotti dal sensore vengono scartati. Se non spuntato, vengono inoltrati al computer tutti i frame prodotti dalla fotocamera (comportamento predefinito).</string>
+    <string name="rotate_180_label">Ruota di 180°</string>
+    <string name="rotate_180_hint">Aggiunge una rotazione extra di 180° ad ogni frame in uscita, sopra l\'orientamento selezionato sopra. Selezionabile anche durante lo streaming: il cambio ha effetto dal frame successivo, senza riavviare il servizio.</string>
+    <string name="orientation_label">Orientamento telecamera</string>
+    <string name="orientation_portrait">Verticale</string>
+    <string name="orientation_landscape">Orizzontale</string>
+    <string name="orientation_portrait_inverted">Verticale invertito</string>
+    <string name="orientation_landscape_inverted">Orizzontale invertito</string>
+    <string name="zoom_label">Zoom</string>
+    <string name="fullscreen_preview">Schermo intero</string>
+    <string name="exit_fullscreen">Indietro</string>
+    <string name="focus_locking">Messa a fuoco…</string>
+    <string name="obs_hint_yuv">Sul PC apri AndroidCameraLinuxGui, clicca Abilita per OBS, poi in OBS aggiungi Dispositivo di acquisizione video (V4L2) e seleziona "%1$s".</string>
+
+    <string name="section_stream">Stream</string>
+    <string name="device_name_label">Nome telefono (OBS)</string>
+    <string name="device_name_hint">Compare come nome della webcam in OBS. Usa un nome diverso per ogni telefono.</string>
+    <string name="port_label">Porta servizio</string>
+    <string name="start_service">Avvia servizio webcam</string>
+    <string name="stop_service">Ferma servizio webcam</string>
+    <string name="service_running">Servizio attivo</string>
+    <string name="service_stopped">Servizio fermato</string>
+    <string name="cameras_in_use">Telecamera in uso: %1$s</string>
+    <string name="no_camera_selected">Seleziona almeno una telecamera</string>
+
+    <string name="obs_instructions_title">Configurazione OBS</string>
+    <string name="obs_url_stream">Stream: %1$s</string>
+    <string name="obs_hint_usb">Sul PC apri AndroidCameraLinuxGui e clicca Abilita per OBS, poi in OBS aggiungi Dispositivo di acquisizione video (V4L2) e seleziona "%1$s".</string>
+    <string name="obs_hint_usb_device">Lascia attivo il debug USB. Sul PC apri AndroidCameraLinuxGui e clicca Abilita per OBS — il driver USB crea la webcam "%1$s" per OBS (senza HTTP).</string>
+    <string name="obs_hint_ip">Sul PC apri AndroidCameraLinuxGui e clicca Abilita per OBS (oppure collega lo stream YUV all\'URL sopra). In OBS seleziona "%1$s".</string>
+    <string name="copy_url">Copia URL</string>
+    <string name="url_copied">URL copiato</string>
+
+    <string name="section_appearance">Aspetto</string>
+    <string name="theme_label">Tema</string>
+    <string name="theme_light">Chiaro</string>
+    <string name="theme_dark">Scuro</string>
+    <string name="language_label">Lingua</string>
+    <string name="language_english">English</string>
+    <string name="language_italian">Italiano</string>
+
+    <string name="permission_camera_required">Il permesso fotocamera e necessario per lo streaming.</string>
+    <string name="permission_notification_required">Il permesso notifiche mostra lo stato del servizio attivo.</string>
+    <string name="error_start_failed">Impossibile avviare il servizio di streaming: %1$s</string>
+    <string name="error_no_network">Nessun indirizzo di rete utilizzabile. Controlla Wi-Fi o tethering USB.</string>
+    <string name="status_idle_detail">Scegli modalita e telecamera, poi avvia il servizio.</string>
+    <string name="status_active_detail">Lo streaming e attivo. Mantieni la notifica mentre usi OBS.</string>
+
+    <string name="notification_channel_name">Servizio webcam</string>
+    <string name="notification_channel_desc">Mostra quando il servizio di streaming webcam e attivo</string>
+    <string name="notification_title">Servizio webcam attivo</string>
+    <string name="notification_text_single">Telecamera in uso: %1$s</string>
+    <string name="notification_action_stop">Ferma</string>
+
+    <string name="preview_label">Anteprima live</string>
+
+    <!-- Manual focus controls -->
+    <string name="manual_focus_label">Messa a fuoco manuale</string>
+    <string name="manual_adjustments_label">Regolazioni manuali (ISO, esposizione)</string>
+    <string name="focus_label">Fuoco</string>
+    <string name="focus_increase">Aumenta fuoco</string>
+    <string name="focus_decrease">Diminuisci fuoco</string>
+    <string name="iso_label">ISO</string>
+    <string name="exposure_label">Tempo di esposizione</string>
+    <string name="flash_torch_off">Flash Spento</string>
+    <string name="flash_torch_on">Flash Acceso</string>
+    <string name="zoom_increase">Aumenta zoom</string>
+    <string name="zoom_decrease">Diminuisci zoom</string>
+    <string name="device_address">Indirizzo dispositivo: %1$s</string>
+
+    <string name="btn_refresh_ports">Aggiorna porte</string>
+    <string name="refresh_hint">Porta predefinita: 2743. Usa questa per il riconoscimento automatico dal computer, oppure inserisci una porta personalizzata (rilevamento manuale)</string>
+
+    <!-- Video quality settings -->
+    <string name="stream_format_label">Formato stream</string>
+    <string name="stream_format_yuv">YUV (Raw)</string>
+    <string name="stream_format_jpeg">JPEG (Compresso)</string>
+    <string name="stream_format_hint">YUV e piu veloce. JPEG riduce la banda.</string>
+    <string name="jpeg_quality_label">Qualita JPEG</string>
+    <string name="jpeg_quality_hint">Qualita piu bassa = frame piu piccoli = FPS piu alti. Qualita piu alta = immagine migliore ma piu banda.</string>
+    <string name="jpeg_encoder_label">Encoder JPEG</string>
+    <string name="jpeg_encoder_hw">MediaCodec (HW)</string>
+    <string name="jpeg_encoder_sw">YuvImage (SW)</string>
+    <string name="jpeg_encoder_pending">Rilevamento…</string>
+    <string name="stream_format_section_title">Streaming avanzato</string>
+</resources>

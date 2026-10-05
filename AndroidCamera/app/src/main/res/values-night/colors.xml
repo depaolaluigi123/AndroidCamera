@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark theme colors – reloaded when theme changes -->
+<resources>
+    <color name="color_background">#0E1621</color>
+    <color name="color_surface">#162433</color>
+    <color name="color_surface_variant">#1E3044</color>
+    <color name="color_primary">#3DDC97</color>
+    <color name="color_primary_variant">#2BB87A</color>
+    <color name="color_on_primary">#062418</color>
+    <color name="color_secondary">#7EB8DA</color>
+    <color name="color_on_secondary">#0B1A24</color>
+    <color name="color_text_primary">#EAF2F8</color>
+    <color name="color_text_secondary">#A7B8C7</color>
+    <color name="color_outline">#33485C</color>
+    <color name="color_success">#3DDC97</color>
+    <color name="color_danger">#EF6B5E</color>
+    <color name="color_card_shadow">#66000000</color>
+    <color name="color_status_active">#3DDC97</color>
+    <color name="color_status_idle">#6E8294</color>
+    <color name="ic_launcher_background">#0E1621</color>
+</resources>

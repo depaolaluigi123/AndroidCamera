@@ -1,0 +1,1171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/color_background"
+    tools:context=".ui.MainActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/color_background"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/color_background"
+            app:title="@string/app_name"
+            app:titleTextColor="@color/color_text_primary" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="32dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="8dp">
+
+            <TextView
+                android:id="@+id/subtitleText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/app_subtitle"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="15sp" />
+
+            <!-- Status card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/statusCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                app:cardBackgroundColor="@color/color_surface"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/color_outline"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:id="@+id/statusDot"
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:background="@drawable/bg_status_dot" />
+
+                        <TextView
+                            android:id="@+id/statusTitle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:text="@string/service_stopped"
+                            android:textColor="@color/color_text_primary"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/statusDetail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/status_idle_detail"
+                        android:textColor="@color/color_text_secondary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/camerasInUseText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textColor="@color/color_primary"
+                        android:textSize="14sp"
+                        android:visibility="gone"
+                        tools:text="Cameras in use: Rear"
+                        tools:visibility="visible" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Cameras (hardware-dependent list) -->
+            <TextView
+                android:id="@+id/cameraSectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="@string/section_camera"
+                android:textColor="@color/color_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/cameraLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/camera_picker_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/cameraSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_spinner"
+                android:paddingHorizontal="12dp" />
+
+            <TextView
+                android:id="@+id/cameraPickerHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/camera_picker_hint"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="12sp" />
+
+            <!-- Preview -->
+            <TextView
+                android:id="@+id/previewLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="@string/preview_label"
+                android:textColor="@color/color_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/previewCard"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:layout_marginTop="10dp"
+                app:cardBackgroundColor="@color/color_surface_variant"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/color_outline"
+                app:strokeWidth="1dp">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <!-- Wrapper that hosts ONLY the video preview surfaces
+                         (PreviewView + Camera2 TextureView). Rotating this
+                         wrapper by 180° rotates the live preview without
+                         affecting CameraX (which only sees the PreviewView
+                         and its surface) and without dragging the focus
+                         reticle or other overlays into the rotation. -->
+                    <FrameLayout
+                        android:id="@+id/rotate180Wrapper"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <androidx.camera.view.PreviewView
+                            android:id="@+id/previewView"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent" />
+
+                        <TextureView
+                            android:id="@+id/camera2PreviewView"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <!-- Tap-to-focus reticle, drawn on top of the preview.
+                         Lives OUTSIDE the rotation wrapper so it stays in
+                         screen coordinates (the user taps where they see
+                         the focus indicator, not where a rotated reticle
+                         would be). -->
+                    <View
+                        android:id="@+id/focusReticleMain"
+                        android:layout_width="90dp"
+                        android:layout_height="90dp"
+                        android:background="@drawable/focus_reticle"
+                        android:clickable="false"
+                        android:contentDescription="@string/focus_locking"
+                        android:focusable="false"
+                        android:visibility="gone"
+                        tools:visibility="gone" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/zoomLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/zoom_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnZoomMinus"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/zoom_decrease"
+                    android:src="@android:drawable/ic_media_previous"
+                    android:tint="@color/color_text_primary" />
+
+                <SeekBar
+                    android:id="@+id/zoomSeekBar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progress="0" />
+
+                <ImageButton
+                    android:id="@+id/btnZoomPlus"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/zoom_increase"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="@color/color_text_primary" />
+            </LinearLayout>
+
+            <!-- Flash / Torch button (always visible, rear cameras only) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFlash"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:enabled="false"
+                android:text="@string/flash_torch_off"
+                app:icon="@drawable/ic_flash_off"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFullscreenPreview"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/fullscreen_preview" />
+
+            <!-- Manual focus toggle -->
+            <CheckBox
+                android:id="@+id/manualFocusCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/manual_focus_label"
+                android:textColor="@color/color_text_primary"
+                android:textSize="14sp" />
+
+            <!-- Manual adjustments toggle (ISO + exposure time) -->
+            <CheckBox
+                android:id="@+id/manualAdjustmentsCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/manual_adjustments_label"
+                android:textColor="@color/color_text_primary"
+                android:textSize="14sp" />
+
+            <!-- "Rotate 180°" checkbox: extra 180° on top of the orientation
+                 selected above. Editable while the stream is running — the
+                 toggle takes effect on the next emitted frame without
+                 restarting the service. Mirrored in the fullscreen overlay
+                 via rotate180CheckboxFullscreen. -->
+            <CheckBox
+                android:id="@+id/rotate180Checkbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/rotate_180_label"
+                android:textColor="@color/color_text_primary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/rotate180Hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/rotate_180_hint"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="12sp" />
+
+
+            <!-- Manual focus controls (focus slider only) -->
+            <LinearLayout
+                android:id="@+id/manualFocusControls"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/focusLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/focus_label"
+                    android:textColor="@color/color_text_secondary"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/btnFocusMinus"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/focus_decrease"
+                        android:src="@android:drawable/ic_media_previous"
+                        android:tint="@color/color_text_primary" />
+
+                    <SeekBar
+                        android:id="@+id/focusSeekBar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:max="1000"
+                        android:progress="0" />
+
+                    <ImageButton
+                        android:id="@+id/btnFocusPlus"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/focus_increase"
+                        android:src="@android:drawable/ic_media_next"
+                        android:tint="@color/color_text_primary" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Manual adjustments controls (ISO + exposure time only) -->
+            <LinearLayout
+                android:id="@+id/manualAdjustmentsControls"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/isoLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/iso_label"
+                    android:textColor="@color/color_text_secondary"
+                    android:textSize="13sp" />
+
+                <Spinner
+                    android:id="@+id/isoSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_spinner"
+                    android:paddingHorizontal="12dp" />
+
+                <TextView
+                    android:id="@+id/exposureLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/exposure_label"
+                    android:textColor="@color/color_text_secondary"
+                    android:textSize="13sp" />
+
+                <Spinner
+                    android:id="@+id/exposureSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_spinner"
+                    android:paddingHorizontal="12dp" />
+            </LinearLayout>
+
+            <!-- Connection mode -->
+            <TextView
+                android:id="@+id/connectionSectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="@string/section_connection"
+                android:textColor="@color/color_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/connectionToggle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal"
+                app:checkedButton="@+id/btnModeUsbDevice"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnModeUsbDevice"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:insetTop="4dp"
+                    android:insetBottom="4dp"
+                    android:minWidth="0dp"
+                    android:paddingHorizontal="4dp"
+                    android:text="@string/mode_usb_device"
+                    android:textSize="11sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnModeUsb"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:insetTop="4dp"
+                    android:insetBottom="4dp"
+                    android:minWidth="0dp"
+                    android:paddingHorizontal="4dp"
+                    android:text="@string/mode_usb"
+                    android:textSize="11sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnModeIp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:insetTop="4dp"
+                    android:insetBottom="4dp"
+                    android:minWidth="0dp"
+                    android:paddingHorizontal="4dp"
+                    android:text="@string/mode_ip"
+                    android:textSize="11sp" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <TextView
+                android:id="@+id/connectionModeDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/mode_usb_device_desc"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <!-- Video quality -->
+            <TextView
+                android:id="@+id/videoSectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="@string/section_video"
+                android:textColor="@color/color_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/videoFormatHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/format_yuv_hint"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/resolutionLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/resolution_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/resolutionSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_spinner"
+                android:paddingHorizontal="12dp" />
+
+            <TextView
+                android:id="@+id/fpsLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/fps_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/fpsSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_spinner"
+                android:paddingHorizontal="12dp" />
+
+            <TextView
+                android:id="@+id/fpsHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/fps_hint"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="12sp" />
+
+            <!-- Limit FPS checkbox: when checked, the outgoing stream is
+                 capped to the FPS value selected above; extra frames
+                 produced by the sensor are dropped before reaching the PC. -->
+            <CheckBox
+                android:id="@+id/limitFpsCheckbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/limit_fps_label"
+                android:textColor="@color/color_text_primary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/limitFpsHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/limit_fps_hint"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/orientationLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/orientation_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/orientationSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_spinner"
+                android:paddingHorizontal="12dp" />
+
+            <!-- Advanced streaming settings -->
+            <TextView
+                android:id="@+id/streamFormatSectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="@string/stream_format_section_title"
+                android:textColor="@color/color_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/streamFormatLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/stream_format_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/streamFormatSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_spinner"
+                android:paddingHorizontal="12dp" />
+
+            <TextView
+                android:id="@+id/streamFormatHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/stream_format_hint"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/jpegQualityLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/jpeg_quality_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/jpegQualitySpinner"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_spinner"
+                android:paddingHorizontal="12dp" />
+
+            <TextView
+                android:id="@+id/jpegQualityHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/jpeg_quality_hint"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/jpegEncoderLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/jpeg_encoder_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/jpegEncoderValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/color_text_primary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:text="HW (MediaCodec)"
+                tools:visibility="visible" />
+
+            <!-- Stream controls -->
+            <TextView
+                android:id="@+id/streamSectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="@string/section_stream"
+                android:textColor="@color/color_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/deviceNameInputLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:hint="@string/device_name_label"
+                app:boxBackgroundColor="@color/color_surface"
+                app:boxStrokeColor="@color/color_primary"
+                app:helperText="@string/device_name_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/deviceNameInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords"
+                    android:maxLength="31"
+                    android:textColor="@color/color_text_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/portInputLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:hint="@string/port_label"
+                app:boxBackgroundColor="@color/color_surface"
+                app:boxStrokeColor="@color/color_primary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/portInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="2743"
+                    android:textColor="@color/color_text_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/refreshHintText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/refresh_hint"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnToggleService"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="14dp"
+                android:text="@string/start_service"
+                app:backgroundTint="@color/color_primary"
+                app:cornerRadius="16dp" />
+
+            <!-- OBS info -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/obsCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                app:cardBackgroundColor="@color/color_surface"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/color_outline"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        android:id="@+id/obsTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/obs_instructions_title"
+                        android:textColor="@color/color_text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/deviceAddressText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textColor="@color/color_text_secondary"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/obsUrlStream"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:fontFamily="monospace"
+                        android:textColor="@color/color_primary"
+                        android:textIsSelectable="true"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/obsHint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textColor="@color/color_text_secondary"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCopyUrl"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/copy_url"
+                        app:backgroundTint="@color/color_surface_variant"
+                        app:cornerRadius="12dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Appearance -->
+            <TextView
+                android:id="@+id/appearanceSectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="@string/section_appearance"
+                android:textColor="@color/color_text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/themeLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/theme_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/themeToggle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                app:checkedButton="@+id/btnThemeLight"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnThemeLight"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/theme_light" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnThemeDark"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/theme_dark" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <TextView
+                android:id="@+id/languageLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/language_label"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/languageToggle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                app:checkedButton="@+id/btnLangEn"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLangEn"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/language_english" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLangIt"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/language_italian" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Fullscreen live preview overlay -->
+    <FrameLayout
+        android:id="@+id/fullscreenPreviewOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:clickable="true"
+        android:elevation="24dp"
+        android:focusable="true"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Wrapper that hosts ONLY the video preview surfaces
+             (PreviewView + Camera2 TextureView). Rotating this wrapper
+             by 180° rotates the live preview without affecting CameraX
+             (which only sees the PreviewView and its surface) and
+             without dragging the overlay UI (exit button, camera
+             selector, zoom controls) into the rotation. -->
+        <FrameLayout
+            android:id="@+id/rotate180WrapperFullscreen"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.camera.view.PreviewView
+                android:id="@+id/fullscreenPreviewView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextureView
+                android:id="@+id/fullscreenCamera2PreviewView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExitFullscreen"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="16dp"
+            android:text="@string/exit_fullscreen" />
+
+        <!-- Camera selector — same list as the main spinner so the user can
+             switch lenses without leaving fullscreen mode. Sits in the top
+             bar so the bottom bar keeps its width for the manual controls. -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="16dp"
+            android:background="#99000000"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:text="@string/camera_picker_label_short"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+
+            <Spinner
+                android:id="@+id/cameraSpinnerFullscreen"
+                android:layout_width="180dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_spinner"
+                android:paddingHorizontal="12dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="#99000000"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:id="@+id/fullscreenZoomLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/zoom_label"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btnFullscreenZoomMinus"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/zoom_decrease"
+                    android:src="@android:drawable/ic_media_previous"
+                    android:tint="#FFFFFF" />
+
+                <SeekBar
+                    android:id="@+id/fullscreenZoomSeekBar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progress="0" />
+
+                <ImageButton
+                    android:id="@+id/btnFullscreenZoomPlus"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/zoom_increase"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="#FFFFFF" />
+            </LinearLayout>
+
+            <!-- Flash / Torch button (fullscreen, always visible) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFlashFullscreen"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:enabled="false"
+                android:text="@string/flash_torch_off"
+                app:icon="@drawable/ic_flash_off"
+                app:iconGravity="textStart" />
+
+            <!-- Manual focus toggle (fullscreen mirror of manualFocusCheckbox) -->
+            <CheckBox
+                android:id="@+id/manualFocusCheckboxFullscreen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/manual_focus_label"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+            <!-- Manual adjustments toggle (fullscreen mirror) -->
+            <CheckBox
+                android:id="@+id/manualAdjustmentsCheckboxFullscreen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/manual_adjustments_label"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+            <!-- "Rotate 180°" toggle (fullscreen mirror of rotate180Checkbox).
+                 Editable mid-stream: takes effect on the next frame, no
+                 service restart required. -->
+            <CheckBox
+                android:id="@+id/rotate180CheckboxFullscreen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/rotate_180_label"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+            <!-- Manual focus controls (fullscreen, visible only when manual focus enabled) -->
+            <LinearLayout
+                android:id="@+id/manualFocusControlsFullscreen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/focus_label"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/btnFocusMinusFullscreen"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/focus_decrease"
+                        android:src="@android:drawable/ic_media_previous"
+                        android:tint="#FFFFFF" />
+
+                    <SeekBar
+                        android:id="@+id/focusSeekBarFullscreen"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:max="1000"
+                        android:progress="0" />
+
+                    <ImageButton
+                        android:id="@+id/btnFocusPlusFullscreen"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/focus_increase"
+                        android:src="@android:drawable/ic_media_next"
+                        android:tint="#FFFFFF" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Manual adjustments controls (fullscreen, visible only when manual adjustments enabled) -->
+            <LinearLayout
+                android:id="@+id/manualAdjustmentsControlsFullscreen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/iso_label"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+
+                <Spinner
+                    android:id="@+id/isoSpinnerFullscreen"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_spinner"
+                    android:paddingHorizontal="12dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/exposure_label"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+
+                <Spinner
+                    android:id="@+id/exposureSpinnerFullscreen"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_spinner"
+                    android:paddingHorizontal="12dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Tap-to-focus reticle, drawn on top of the preview -->
+        <View
+            android:id="@+id/focusReticle"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:background="@drawable/focus_reticle"
+            android:clickable="false"
+            android:contentDescription="@string/focus_locking"
+            android:focusable="false"
+            android:visibility="gone"
+            tools:visibility="gone" />
+    </FrameLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

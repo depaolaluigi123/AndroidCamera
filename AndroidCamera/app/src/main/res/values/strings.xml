@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Default language: English – reloaded when language changes -->
+<resources>
+    <string name="app_name">AndroidCamera Webcam</string>
+    <string name="app_subtitle">Turn your phone cameras into an OBS webcam</string>
+
+    <string name="section_connection">Connection mode</string>
+    <string name="mode_usb">USB Tethering</string>
+    <string name="mode_usb_desc">Enable USB Tethering on the phone, then use the virtual webcam on the PC (selectable in OBS like a real camera)</string>
+    <string name="mode_usb_device">USB Device</string>
+    <string name="mode_usb_device_desc">USB debugging only (no tethering / Wi‑Fi). The PC driver receives binary frames over the USB cable (ADB) and exposes a real V4L2 webcam for OBS — no HTTP.</string>
+    <string name="mode_ip">IP (LAN)</string>
+    <string name="mode_ip_desc">Stream over Wi‑Fi using the device local IP</string>
+
+    <string name="section_camera">Camera</string>
+    <string name="camera_picker_label">Camera to stream</string>
+    <string name="camera_picker_label_short">Camera:</string>
+    <string name="camera_picker_hint">List depends on this phone hardware. Use the live preview above to confirm the lens.</string>
+    <string name="camera_facing_back">Rear</string>
+    <string name="camera_facing_front">Front</string>
+    <string name="camera_facing_external">External</string>
+    <string name="camera_facing_unknown">Camera</string>
+    <string name="camera_facing_back_short">rear</string>
+    <string name="camera_facing_front_short">front</string>
+    <string name="camera_facing_external_short">external</string>
+    <string name="camera_facing_unknown_short">camera</string>
+    <string name="camera_option">%1$s %2$d (ID %3$s)</string>
+    <string name="camera_option_with_focal">%1$s %2$d · %3$s (ID %4$s)</string>
+    <string name="camera_in_use_short">%1$s %2$d (ID %3$s)</string>
+    <string name="camera_none_available">No cameras found on this device</string>
+
+    <string name="section_video">Video quality</string>
+    <string name="format_yuv_hint">Streams raw YUV for low latency. On the PC use AndroidCameraLinuxGui (Enable for OBS), then pick this phone by name in OBS.</string>
+    <string name="resolution_label">Resolution</string>
+    <string name="fps_label">Frame rate (FPS)</string>
+    <string name="fps_hint">This sends a request to the camera sensor for the chosen frame rate. The sensor picks the closest supported value on its own, so the actual frame rate may be slightly different from what you select here.</string>
+    <string name="limit_fps_label">Limit FPS</string>
+    <string name="limit_fps_hint">When checked, the stream forwarded to the computer is capped to the FPS value selected above: any extra frames produced by the camera sensor are dropped. When unchecked, every frame produced by the camera is forwarded (the default behaviour).</string>
+    <string name="rotate_180_label">Rotate 180°</string>
+    <string name="rotate_180_hint">Adds an extra 180° rotation to every outgoing frame on top of the orientation selected above. Editable while the stream is running — takes effect on the next frame, no service restart required.</string>
+    <string name="orientation_label">Camera orientation</string>
+    <string name="orientation_portrait">Vertical</string>
+    <string name="orientation_landscape">Horizontal</string>
+    <string name="orientation_portrait_inverted">Vertical inverted</string>
+    <string name="orientation_landscape_inverted">Horizontal inverted</string>
+    <string name="zoom_label">Zoom</string>
+    <string name="fullscreen_preview">Fullscreen</string>
+    <string name="exit_fullscreen">Back</string>
+    <string name="focus_locking">Focusing…</string>
+    <string name="obs_hint_yuv">On the PC open AndroidCameraLinuxGui, click Enable for OBS, then in OBS add Video Capture Device (V4L2) and select "%1$s".</string>
+
+    <string name="section_stream">Stream</string>
+    <string name="device_name_label">Phone name (OBS)</string>
+    <string name="device_name_hint">Shown as the webcam name in OBS. Use a unique name per phone.</string>
+    <string name="port_label">Service port</string>
+    <string name="start_service">Start webcam service</string>
+    <string name="stop_service">Stop webcam service</string>
+    <string name="service_running">Service active</string>
+    <string name="service_stopped">Service stopped</string>
+    <string name="cameras_in_use">Camera in use: %1$s</string>
+    <string name="no_camera_selected">Select at least one camera</string>
+
+    <string name="obs_instructions_title">OBS setup</string>
+    <string name="obs_url_stream">Stream: %1$s</string>
+    <string name="obs_hint_usb">On the PC open AndroidCameraLinuxGui and click Enable for OBS, then in OBS add Video Capture Device (V4L2) and select "%1$s".</string>
+    <string name="obs_hint_usb_device">Keep USB debugging on. On the PC open AndroidCameraLinuxGui and click Enable for OBS — the USB driver creates webcam "%1$s" for OBS (no HTTP).</string>
+    <string name="obs_hint_ip">On the PC open AndroidCameraLinuxGui and click Enable for OBS (or point a custom YUV pipeline at the URL above). In OBS select "%1$s".</string>
+    <string name="copy_url">Copy URL</string>
+    <string name="url_copied">URL copied</string>
+
+    <string name="section_appearance">Appearance</string>
+    <string name="theme_label">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="language_label">Language</string>
+    <string name="language_english">English</string>
+    <string name="language_italian">Italiano</string>
+
+    <string name="permission_camera_required">Camera permission is required to stream.</string>
+    <string name="permission_notification_required">Notification permission helps show the active service status.</string>
+    <string name="error_start_failed">Could not start the streaming service: %1$s</string>
+    <string name="error_no_network">No usable network address found. Check Wi‑Fi or USB tethering.</string>
+    <string name="status_idle_detail">Choose connection mode and camera, then start the service.</string>
+    <string name="status_active_detail">Streaming is live. Keep this notification while using OBS.</string>
+
+    <string name="notification_channel_name">Webcam service</string>
+    <string name="notification_channel_desc">Shows when the webcam streaming service is active</string>
+    <string name="notification_title">Webcam service active</string>
+    <string name="notification_text_single">Camera in use: %1$s</string>
+    <string name="notification_action_stop">Stop</string>
+
+    <string name="preview_label">Live preview</string>
+
+    <!-- Manual focus controls -->
+    <string name="manual_focus_label">Manual focus</string>
+    <string name="manual_adjustments_label">Manual adjustments (ISO, exposure)</string>
+    <string name="focus_label">Focus</string>
+    <string name="focus_increase">Increase focus</string>
+    <string name="focus_decrease">Decrease focus</string>
+    <string name="iso_label">ISO</string>
+    <string name="exposure_label">Exposure time</string>
+    <string name="flash_torch_off">Flash Off</string>
+    <string name="flash_torch_on">Flash On</string>
+    <string name="zoom_increase">Increase zoom</string>
+    <string name="zoom_decrease">Decrease zoom</string>
+    <string name="device_address">Device address: %1$s</string>
+
+    <string name="btn_refresh_ports">Refresh ports</string>
+    <string name="refresh_hint">Default port: 2743. Use this port for automatic computer detection, or enter a custom port (manual detection).</string>
+
+    <!-- Advanced streaming settings -->
+    <string name="stream_format_section_title">Advanced streaming</string>
+    <string name="stream_format_label">Stream format</string>
+    <string name="stream_format_yuv">YUV (Raw)</string>
+    <string name="stream_format_jpeg">JPEG (Compressed)</string>
+    <string name="stream_format_hint">YUV is faster. JPEG reduces bandwidth.</string>
+    <string name="jpeg_quality_label">JPEG quality</string>
+    <string name="jpeg_quality_hint">Lower quality = smaller frames = higher FPS. Higher quality = better image but more bandwidth.</string>
+    <string name="jpeg_encoder_label">JPEG encoder</string>
+    <string name="jpeg_encoder_hw">MediaCodec (HW)</string>
+    <string name="jpeg_encoder_sw">YuvImage (SW)</string>
+    <string name="jpeg_encoder_pending">Detecting…</string>
+</resources>

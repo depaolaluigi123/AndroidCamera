@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light theme colors – reloaded when theme changes -->
+<resources>
+    <color name="color_background">#FFFFFF</color>
+    <color name="color_surface">#FFFFFF</color>
+    <color name="color_surface_variant">#E8EEF6</color>
+    <color name="color_primary">#0B6E4F</color>
+    <color name="color_primary_variant">#095C42</color>
+    <color name="color_on_primary">#FFFFFF</color>
+    <color name="color_secondary">#1B4965</color>
+    <color name="color_on_secondary">#FFFFFF</color>
+    <color name="color_text_primary">#12263A</color>
+    <color name="color_text_secondary">#5A6B7B</color>
+    <color name="color_outline">#C9D4E0</color>
+    <color name="color_success">#1F8A5B</color>
+    <color name="color_danger">#C0392B</color>
+    <color name="color_card_shadow">#1A12263A</color>
+    <color name="color_status_active">#1F8A5B</color>
+    <color name="color_status_idle">#8A97A5</color>
+    <color name="ic_launcher_background">#0B6E4F</color>
+</resources>

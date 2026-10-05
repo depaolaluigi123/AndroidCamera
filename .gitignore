@@ -1,0 +1,7 @@
+.claude
+
+/AndroidCameraLinuxGui/android_camera_gui/__pycache__
+/AndroidCameraLinuxGui/android_camera_gui/bin
+/AndroidCameraLinuxGui/.venv
+/AndroidCameraUsbDriver/bin
+/Releases

@@ -1,0 +1,32 @@
+# AndroidCameraLinuxGui Python dependencies.
+#
+# Tutte le dipendenze di runtime (eccetto tkinter) sono raccolte qui e
+# installate automaticamente dallo script ``run.sh`` al primo avvio:
+#   - se la venv ``.venv`` non esiste, viene creata
+#   - poi viene lanciato ``pip install -r requirements.txt`` per scaricare
+#     TUTTE le librerie elencate in questo file.
+#
+# L'unica dipendenza non-stdlib richiesta è Pillow, usata dalla finestra
+# "In-app preview" per decodificare i frame JPEG/PNG e mostrarli su un
+# Canvas Tkinter (ImageTk.PhotoImage).
+#
+# Dipendenze di sistema consigliate (non gestite da pip):
+#   python3-tk   - fornisce tkinter, richiesto da tutta la GUI
+#   python3-venv - fornisce il modulo ``venv`` usato da run.sh
+#   adb          - ADB per scoprire i device
+#   v4l2loopback - modulo kernel per esporre /dev/videoN
+#   v4l-utils    - ``v4l2-ctl`` per impostare il formato del loopback
+#   ffmpeg       - demuxer per il bridge YUV/JPEG → V4L2
+#   curl         - sorgente per lo stream HTTP (modalità Tethering / Wi-Fi)
+#
+# Opzionale (non usata dalla GUI, tenuta per riferimento):
+#   obsws-python - OBS WebSocket (rimosso dal bridge nella versione corrente)
+
+# Pillow: PIL fork usato da in_app_preview.py per aprire JPEG/PNG via
+# Image.open() e mostrarli con ImageTk.PhotoImage. Senza di esso la
+# finestra di anteprima mostra un Canvas nero con il messaggio
+# "Pillow non installato".
+#
+# Vincolo >= 10.0.0 perché la versione 10+ ha il modulo ImageTk bundled
+# in modo consistente su tutte le piattaforme.
+Pillow>=10.0.0
