@@ -21,6 +21,8 @@ import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.AspectRatio as CameraXAspectRatio
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -30,7 +32,7 @@ import android.view.View
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.androidcamera.webcam.model.JpegQuality
+import com.androidcamera.webcam.model.AspectRatio
 import com.androidcamera.webcam.model.StreamConfig
 import com.androidcamera.webcam.model.CameraFacing
 import com.androidcamera.webcam.model.StreamFormat
@@ -41,7 +43,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -75,18 +76,11 @@ class CameraStreamController(
     private var camera2Session: Camera2StreamSession? = null
 
     val frameBroker = FrameBroker()
-    private val lastPublishNs = AtomicLong(0L)
-    /**
-     * High-water mark of [System.nanoTime] for the next publish to honour
-     * when [StreamConfig.limitFps] is enabled: a publish that arrives
-     * before this instant is dropped (the broker keeps holding the
-     * previous frame). Reset to 0 by [updateStreamConfig] and by the
-     * limit-toggle setter so a tighter / looser limit takes effect from
-     * the very next frame.
-     */
-    private val nextPublishAllowedNs = AtomicLong(0L)
 
     fun isStarted(): Boolean = started.get()
+
+    /** The settings the camera is running with (effective resolution / FPS for this camera). */
+    fun currentConfig(): StreamConfig = config
 
     suspend fun start(
         lifecycleOwner: LifecycleOwner,
@@ -292,13 +286,6 @@ class CameraStreamController(
             }
         }
         applyZoom()
-        // Reset the last publish timestamp when FPS changes so the next frame
-        // is processed without stale comparison.
-        lastPublishNs.set(0L)
-        // Also reset the limit-FPS gate: changing the target FPS would
-        // otherwise carry the old inter-frame interval into the new config
-        // and either drop too many or too few frames at the boundary.
-        nextPublishAllowedNs.set(0L)
         camera2Session?.updateConfig(streamConfig)
     }
 
@@ -326,7 +313,7 @@ class CameraStreamController(
         applyCameraXOptions(config.manualFocusEnabled)
     }
 
-    /** Sets normalized focus distance (0f = closest, 1f = farthest). */
+    /** Sets the normalized manual focus (0f = infinity, 1f = closest focus distance). */
     fun setFocusDistance(distance: Float) {
         config = config.copy(focusDistance = distance.coerceIn(0f, 1f))
         camera2Session?.setFocusDistance(config.focusDistance)
@@ -347,33 +334,38 @@ class CameraStreamController(
         applyCameraXOptions(config.manualFocusEnabled)
     }
 
-    /** Toggles torch/flash mode (rear cameras only). */
+    /** Toggles torch/flash mode (cameras with a flash unit). */
     fun setFlashTorch(enabled: Boolean) {
         config = config.copy(flashTorchEnabled = enabled)
         camera2Session?.setFlashTorch(enabled)
-        applyCameraXOptions(enabled)
+        applyCameraXOptions(config.manualFocusEnabled)
     }
 
     /**
-     * Enables / disables the outgoing-stream FPS cap.
-     *
-     * When [enabled] is true the controller drops (does not publish) any
-     * frame that arrives before the configured [StreamConfig.fps] interval
-     * has elapsed since the last published frame. The camera sensor keeps
-     * running at whatever rate it negotiated with the system, so the live
-     * preview still updates at the full sensor rate; only the broker (and
-     * therefore the stream forwarded to the PC) is capped.
-     *
-     * When [enabled] is false every frame is forwarded, matching the
-     * previous behaviour.
+     * Pinch zoom: multiply the current zoom factor by [scaleFactor] and return the new
+     * linear zoom (0..1, as used by the sliders), or null when the zoom cannot change.
+     * Linear zoom maps to the zoom factor differently on the two paths: CameraX is linear
+     * in the crop width, the Camera2 path linear in the factor.
      */
-    fun setLimitFps(enabled: Boolean) {
-        config = config.copy(limitFps = enabled)
-        // Reset the gate so a freshly-enabled cap doesn't immediately drop
-        // the first frame that arrived during the "uncapped" window, and
-        // a freshly-disabled cap stops dropping on the very next frame.
-        nextPublishAllowedNs.set(0L)
-        camera2Session?.setLimitFps(enabled)
+    fun pinchZoom(scaleFactor: Float): Float? {
+        val cameraId = activeBinding?.camera?.id ?: return null
+        val current = config.linearZoom.coerceIn(0f, 1f)
+        val linear = if (camera2Session != null || camera == null) {
+            val max = CameraCapabilities.maxDigitalZoom(context, cameraId)
+            if (max <= 1f) return null
+            val ratio = (1f + (max - 1f) * current) * scaleFactor
+            (ratio - 1f) / (max - 1f)
+        } else {
+            val state = camera?.cameraInfo?.zoomState?.value ?: return null
+            val min = state.minZoomRatio
+            val max = state.maxZoomRatio
+            if (max <= min) return null
+            val ratio = (state.zoomRatio * scaleFactor).coerceIn(min, max)
+            (1f / min - 1f / ratio) / (1f / min - 1f / max)
+        }.coerceIn(0f, 1f)
+        if (linear == current) return null
+        setLinearZoom(linear)
+        return linear
     }
 
     /** Returns true when the active camera faces rear. */
@@ -472,7 +464,7 @@ class CameraStreamController(
                 // has only ticked "manual adjustments" we keep the camera's
                 // continuous-picture AF running — disabling AF would yank
                 // autofocus from a scene the user did not mean to lock.
-                if (config.manualFocusEnabled) {
+                if (config.manualFocusEnabled && supportsManualFocus()) {
                     builder.setCaptureRequestOption(
                         CaptureRequest.CONTROL_AF_MODE,
                         CaptureRequest.CONTROL_AF_MODE_OFF
@@ -480,7 +472,7 @@ class CameraStreamController(
                 } else {
                     builder.setCaptureRequestOption(
                         CaptureRequest.CONTROL_AF_MODE,
-                        CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
+                        CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO
                     )
                 }
                 // AE mode is governed by "manual adjustments" only. This is
@@ -499,10 +491,14 @@ class CameraStreamController(
                         CaptureRequest.CONTROL_AE_MODE_ON
                     )
                 }
-                if (config.focusDistance > 0f) {
+                // Manual focus across the real lens range (diopters: 0 = infinity,
+                // minimum focus distance = closest).
+                val minFocus = activeBinding?.camera?.id
+                    ?.let { CameraCapabilities.minimumFocusDistance(context, it) } ?: 0f
+                if (config.manualFocusEnabled && minFocus > 0f) {
                     builder.setCaptureRequestOption(
                         CaptureRequest.LENS_FOCUS_DISTANCE,
-                        config.focusDistance
+                        config.focusDistance.coerceIn(0f, 1f) * minFocus
                     )
                 }
                 if (config.iso > 0) {
@@ -517,19 +513,12 @@ class CameraStreamController(
                         config.exposureTimeUs * 1000L
                     )
                 }
-                // Flash / torch (rear cameras only): the FLASH_MODE capture
-                // request option drives the LED continuously while on.
-                if (config.flashTorchEnabled) {
-                    builder.setCaptureRequestOption(
-                        CaptureRequest.FLASH_MODE,
-                        CaptureRequest.FLASH_MODE_TORCH
-                    )
-                } else {
-                    builder.setCaptureRequestOption(
-                        CaptureRequest.FLASH_MODE,
-                        CaptureRequest.FLASH_MODE_OFF
-                    )
-                }
+                // Flash / torch: the FLASH_MODE option drives the LED continuously while
+                // on. It stays on through CameraX's tap-to-focus (checked on the device).
+                builder.setCaptureRequestOption(
+                    CaptureRequest.FLASH_MODE,
+                    if (config.flashTorchEnabled) CaptureRequest.FLASH_MODE_TORCH else CaptureRequest.FLASH_MODE_OFF
+                )
                 control.setCaptureRequestOptions(builder.build())
                 Log.i(
                     TAG,
@@ -552,6 +541,9 @@ class CameraStreamController(
         applyCameraXOptions(config.manualFocusEnabled)
     }
 
+    private fun supportsManualFocus(): Boolean =
+        activeBinding?.camera?.id?.let { CameraCapabilities.supportsManualFocus(context, it) } ?: false
+
     /**
      * Returns the currently active camera session transport — useful for the
      * UI to decide whether the camera-side controls reach the user (always
@@ -573,14 +565,21 @@ class CameraStreamController(
         }
         val cam = camera ?: return
         if (view.width <= 0 || view.height <= 0) return
+        // Manual focus: the distance chosen with the slider stays (a tap re-applies it).
+        if (config.manualFocusEnabled && supportsManualFocus()) {
+            applyCameraXOptions(true)
+            return
+        }
         runCatching {
-            val display = view.display ?: ContextCompat.getDisplayOrDefault(context)
-            val factory = DisplayOrientedMeteringPointFactory(
-                display,
-                cam.cameraInfo,
-                view.width.toFloat(),
-                view.height.toFloat()
-            )
+            // The PreviewView's own factory knows the real transform (FIT_CENTER bands,
+            // rotation, mirroring); a display-oriented factory over the whole view did not.
+            val factory = (view as? PreviewView)?.meteringPointFactory
+                ?: DisplayOrientedMeteringPointFactory(
+                    view.display ?: ContextCompat.getDisplayOrDefault(context),
+                    cam.cameraInfo,
+                    view.width.toFloat(),
+                    view.height.toFloat()
+                )
             val point = factory.createPoint(x, y)
             val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
                 .setAutoCancelDuration(3, TimeUnit.SECONDS)
@@ -701,19 +700,32 @@ class CameraStreamController(
         }
     }
 
+    /** Analysis stream: the selected resolution, in the selected shape. */
     private fun resolutionSelector(): ResolutionSelector {
         val lw = config.resolution.landscapeWidth
         val lh = config.resolution.landscapeHeight
-        val target = Size(max(lw, lh), min(lw, lh))
-        return ResolutionSelector.Builder()
-            .setResolutionStrategy(
-                ResolutionStrategy(
-                    target,
-                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+        return selectorFor(Size(max(lw, lh), min(lw, lh)))
+    }
+
+    /** Preview stream: small (it is shown in a card), with the shape of the stream. */
+    private fun previewResolutionSelector(): ResolutionSelector {
+        val id = activeBinding?.camera?.id ?: return resolutionSelector()
+        return selectorFor(CameraCapabilities.previewSize(context, id, config.aspect))
+    }
+
+    private fun selectorFor(target: Size): ResolutionSelector =
+        ResolutionSelector.Builder()
+            .setAspectRatioStrategy(
+                AspectRatioStrategy(
+                    if (config.aspect == AspectRatio.RATIO_16_9) CameraXAspectRatio.RATIO_16_9
+                    else CameraXAspectRatio.RATIO_4_3,
+                    AspectRatioStrategy.FALLBACK_RULE_AUTO
                 )
             )
+            .setResolutionStrategy(
+                ResolutionStrategy(target, ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER)
+            )
             .build()
-    }
 
     /**
      * Re-apply the preview transform on every live preview surface so the
@@ -782,7 +794,7 @@ class CameraStreamController(
     private fun buildPreview(previewView: PreviewView, physicalId: String?, manualEnabled: Boolean = false): Preview {
         val displayRotation = previewView.display?.rotation ?: Surface.ROTATION_0
         val builder = Preview.Builder()
-            .setResolutionSelector(resolutionSelector())
+            .setResolutionSelector(previewResolutionSelector())
             .setTargetRotation(displayRotation)
         // We deliberately do NOT set AF/AE/ISO/exposure options on
         // the Extender: those are managed by Camera2CameraControl
@@ -812,14 +824,12 @@ class CameraStreamController(
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
             .setTargetRotation(Surface.ROTATION_0)
 
-        // Here a request is made to the camera sensor to get
-        // the number of frames per second chosen by the user.
-        // The sensor automatically selects the closest supported value
-        // to the one requested (it may therefore be slightly different).
-        Camera2Interop.Extender(builder).setCaptureRequestOption(
-            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
-            android.util.Range(config.fps.fps, config.fps.fps)
-        )
+        // Frame rate: one of the AE target ranges the camera declares (the fixed
+        // [fps, fps] one when it exists). A range the camera does not declare was
+        // ignored or made the session fail.
+        activeBinding?.camera?.id?.let { CameraCapabilities.fpsRange(context, it, config.fps) }?.let {
+            Camera2Interop.Extender(builder).setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, it)
+        }
 
         if (physicalId != null) {
             Camera2Interop.Extender(builder).setPhysicalCameraId(physicalId)
@@ -828,27 +838,7 @@ class CameraStreamController(
         return builder.build().also { analysis ->
             analysis.setAnalyzer(executor) { imageProxy ->
                 try {
-                    lastPublishNs.set(System.nanoTime())
-
                     val cfg = config
-                    // FPS cap (publish-side drop). When the user has
-                    // enabled "Limit FPS", drop frames that arrive
-                    // before the configured inter-frame interval has
-                    // elapsed since the last published frame. The
-                    // camera sensor keeps delivering at its negotiated
-                    // rate (so the local preview still looks smooth)
-                    // but the broker — and therefore the stream
-                    // forwarded to the PC — only sees at most
-                    // cfg.fps frames per second.
-                    if (cfg.limitFps) {
-                        val nowNs = System.nanoTime()
-                        val intervalNs = 1_000_000_000L / cfg.fps.fps.coerceAtLeast(1)
-                        val allowedNs = nextPublishAllowedNs.get()
-                        if (allowedNs != 0L && nowNs < allowedNs) {
-                            return@setAnalyzer
-                        }
-                        nextPublishAllowedNs.set(nowNs + intervalNs)
-                    }
                     val frontFacing = activeBinding?.camera?.facing == CameraFacing.FRONT
                     val rotation = cfg.orientation.bufferRotationDegrees(
                         imageProxy.imageInfo.rotationDegrees,

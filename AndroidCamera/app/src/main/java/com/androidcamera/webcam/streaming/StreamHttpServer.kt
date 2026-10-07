@@ -49,7 +49,7 @@ class StreamHttpServer(
                 }
             }
         }
-        return streamConfig.fps.fps
+        return streamConfig.fps
     }
 
     /** Clear timestamp history when FPS configuration changes to avoid stale measurements. */
@@ -162,7 +162,7 @@ class StreamHttpServer(
         val outW = streamConfig.outputWidth
         val outH = streamConfig.outputHeight
         val ready = frame != null
-        val actualFps = if (ready) recordFrame() else streamConfig.fps.fps
+        val actualFps = if (ready) recordFrame() else streamConfig.fps
         // JPEG encoder backend (HW MediaCodec vs SW YuvImage) — surfaced so
         // the GUI can show whether the phone is using hardware-accelerated
         // compression. Older builds reported jpegQuality only.
@@ -178,7 +178,7 @@ class StreamHttpServer(
             .put("outputWidth", outW)
             .put("outputHeight", outH)
             .put("fps", actualFps)
-            .put("configuredFps", streamConfig.fps.fps)
+            .put("configuredFps", streamConfig.fps)
             .put("jpegQuality", streamConfig.jpegQuality.quality)
             // Rotation belongs to the upstream camera buffer; if we don't have
             // a frame yet, fall back to the configured orientation hint.
@@ -264,7 +264,7 @@ class StreamHttpServer(
             append("X-Rotation: ${seed.rotationDegrees}\r\n")
             append("X-Device-Name: ${streamConfig.deviceName}\r\n")
             // X-Fps will be updated to actual once we've seen at least 2 frames.
-            .append("X-Fps: ${streamConfig.fps.fps}\r\n")
+            .append("X-Fps: ${streamConfig.fps}\r\n")
             append("\r\n")
         }.toByteArray(StandardCharsets.US_ASCII)
         output.write(header)
@@ -382,7 +382,7 @@ class StreamHttpServer(
             append("X-Height: ${seed.height}\r\n")
             append("X-Jpeg-Quality: ${streamConfig.jpegQuality.quality}\r\n")
             append("X-Device-Name: ${streamConfig.deviceName}\r\n")
-            append("X-Fps: ${streamConfig.fps.fps}\r\n")
+            append("X-Fps: ${streamConfig.fps}\r\n")
             append("\r\n")
         }.toByteArray(StandardCharsets.US_ASCII)
         output.write(header)

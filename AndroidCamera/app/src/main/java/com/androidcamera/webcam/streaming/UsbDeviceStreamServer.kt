@@ -155,7 +155,7 @@ class UsbDeviceStreamServer(
         header.put(flags.toByte())
         header.putShort(seed.width.toShort())
         header.putShort(seed.height.toShort())
-        header.putShort(streamConfig.fps.fps.toShort())
+        header.putShort(streamConfig.fps.toShort())
         header.putShort(seed.rotationDegrees.toShort())
         header.put(nameBytes.size.toByte())
         header.put(nameBytes)

@@ -51,20 +51,58 @@ enum class StreamFormat {
     JPEG
 }
 
+/** Shape of the stream (and of the preview, so it shows what is streamed). */
+enum class AspectRatio(private val ratio: Double) {
+    RATIO_4_3(4.0 / 3.0),
+    RATIO_16_9(16.0 / 9.0);
+
+    /** True when [width] x [height] (either way round) has this shape, 1% tolerance. */
+    fun matches(width: Int, height: Int): Boolean {
+        if (width <= 0 || height <= 0) return false
+        val r = maxOf(width, height).toDouble() / minOf(width, height)
+        return kotlin.math.abs(r - ratio) <= ratio * 0.01
+    }
+}
+
 /**
- * Base landscape resolutions (4:3 aspect ratio). Portrait orientations use swapped dimensions
- * (e.g. 1280×960 → 960×1280).
+ * Stream resolutions, landscape (portrait orientations swap the dimensions, e.g.
+ * 1280×960 → 960×1280), 4:3 and 16:9 up to 4K. The spinner lists the ones of the selected
+ * shape that the selected camera supports. The entry name is what the preferences store;
+ * the names used by earlier versions are mapped in [fromName].
  */
-enum class StreamResolution(val landscapeWidth: Int, val landscapeHeight: Int) {
-    RES_480P(640, 480),
-    RES_576P(768, 576),
-    RES_768P(1024, 768),
-    RES_960P(1280, 960),
-    RES_1200P(1600, 1200),
-    RES_1440P(1920, 1440),
-    RES_1920P(2560, 1920),
-    RES_2400P(3200, 2400),
-    RES_2880P(3840, 2880);
+enum class StreamResolution(val landscapeWidth: Int, val landscapeHeight: Int, val aspect: AspectRatio) {
+    R640X480(640, 480, AspectRatio.RATIO_4_3),
+    R768X576(768, 576, AspectRatio.RATIO_4_3),
+    R800X600(800, 600, AspectRatio.RATIO_4_3),
+    R1024X768(1024, 768, AspectRatio.RATIO_4_3),
+    R1280X960(1280, 960, AspectRatio.RATIO_4_3),
+    R1440X1080(1440, 1080, AspectRatio.RATIO_4_3),
+    R1600X1200(1600, 1200, AspectRatio.RATIO_4_3),
+    R1920X1440(1920, 1440, AspectRatio.RATIO_4_3),
+    R2048X1536(2048, 1536, AspectRatio.RATIO_4_3),
+    R2304X1728(2304, 1728, AspectRatio.RATIO_4_3),
+    R2560X1920(2560, 1920, AspectRatio.RATIO_4_3),
+    R2592X1944(2592, 1944, AspectRatio.RATIO_4_3),
+    R2880X2160(2880, 2160, AspectRatio.RATIO_4_3),
+    R3200X2400(3200, 2400, AspectRatio.RATIO_4_3),
+    R3264X2448(3264, 2448, AspectRatio.RATIO_4_3),
+    R3840X2880(3840, 2880, AspectRatio.RATIO_4_3),
+    R4000X3000(4000, 3000, AspectRatio.RATIO_4_3),
+    R4032X3024(4032, 3024, AspectRatio.RATIO_4_3),
+
+    R640X360(640, 360, AspectRatio.RATIO_16_9),
+    R854X480(854, 480, AspectRatio.RATIO_16_9),
+    R960X540(960, 540, AspectRatio.RATIO_16_9),
+    R1024X576(1024, 576, AspectRatio.RATIO_16_9),
+    R1280X720(1280, 720, AspectRatio.RATIO_16_9),
+    R1600X900(1600, 900, AspectRatio.RATIO_16_9),
+    R1920X1080(1920, 1080, AspectRatio.RATIO_16_9),
+    R2560X1440(2560, 1440, AspectRatio.RATIO_16_9),
+    R2688X1512(2688, 1512, AspectRatio.RATIO_16_9),
+    R3200X1800(3200, 1800, AspectRatio.RATIO_16_9),
+    R3840X2160(3840, 2160, AspectRatio.RATIO_16_9);
+
+    val pixels: Int get() = landscapeWidth * landscapeHeight
 
     fun widthFor(orientation: StreamOrientation): Int =
         if (orientation.isPortrait) landscapeHeight else landscapeWidth
@@ -75,33 +113,35 @@ enum class StreamResolution(val landscapeWidth: Int, val landscapeHeight: Int) {
     fun labelFor(orientation: StreamOrientation): String =
         "${widthFor(orientation)}×${heightFor(orientation)}"
 
-    companion object {
-        fun fromName(name: String): StreamResolution =
-            entries.firstOrNull { it.name == name } ?: RES_960P
-    }
-}
-
-enum class StreamFps(val fps: Int) {
-    FPS_15(15),
-    FPS_24(24),
-    FPS_25(25),
-    FPS_30(30),
-    FPS_48(48),
-    FPS_50(50),
-    FPS_60(60),
-    FPS_75(75),
-    FPS_90(90),
-    FPS_120(120),
-    FPS_144(144),
-    FPS_160(160),
-    FPS_180(180),
-    FPS_200(200),
-    FPS_240(240),
-    FPS_300(300);
+    /**
+     * The resolution of [shape] corresponding to this one: the same width when it exists
+     * (1280×960 ↔ 1280×720), otherwise the closest width, then the closest pixel count.
+     */
+    fun counterpart(shape: AspectRatio): StreamResolution =
+        if (aspect == shape) this
+        else of(shape).minWith(
+            compareBy({ kotlin.math.abs(it.landscapeWidth - landscapeWidth) }, { kotlin.math.abs(it.pixels - pixels) })
+        )
 
     companion object {
-        fun fromInt(value: Int): StreamFps =
-            entries.firstOrNull { it.fps == value } ?: FPS_30
+        val DEFAULT = R640X480
+
+        fun of(shape: AspectRatio): List<StreamResolution> = entries.filter { it.aspect == shape }
+
+        /** Saved name → resolution; earlier versions saved "RES_480P"-style names (all 4:3). */
+        fun fromName(name: String?): StreamResolution? =
+            entries.firstOrNull { it.name == name } ?: when (name) {
+                "RES_480P" -> R640X480
+                "RES_576P" -> R768X576
+                "RES_768P" -> R1024X768
+                "RES_960P" -> R1280X960
+                "RES_1200P" -> R1600X1200
+                "RES_1440P" -> R1920X1440
+                "RES_1920P" -> R2560X1920
+                "RES_2400P" -> R3200X2400
+                "RES_2880P" -> R3840X2880
+                else -> null
+            }
     }
 }
 
@@ -196,8 +236,11 @@ enum class StreamOrientation(private val holdExtraDegrees: Int) {
 
 data class StreamConfig(
     val format: StreamFormat = StreamFormat.YUV,
-    val resolution: StreamResolution = StreamResolution.RES_480P,
-    val fps: StreamFps = StreamFps.FPS_60,
+    /** Shape of the stream (the "16:9" checkbox): picks which resolutions are offered. */
+    val aspect: AspectRatio = AspectRatio.RATIO_4_3,
+    val resolution: StreamResolution = StreamResolution.DEFAULT,
+    /** Frames per second; the spinner offers only the rates the selected camera can hold. */
+    val fps: Int = 30,
     val orientation: StreamOrientation = StreamOrientation.PORTRAIT,
     val deviceName: String = DEFAULT_DEVICE_NAME,
     /** CameraX linear zoom in 0f..1f (0 = min zoom, 1 = max). */
@@ -214,7 +257,10 @@ data class StreamConfig(
     val manualFocusEnabled: Boolean = false,
     /** When true, manual ISO/exposure-time overrides are active (AE locked). */
     val manualAdjustmentsEnabled: Boolean = false,
-    /** Normalized focus distance 0f..1f (0 = closest, 1 = farthest). */
+    /**
+     * Normalized manual focus 0f..1f across the lens range: 0 = infinity, 1 = the closest
+     * focus distance the lens supports (see LENS_INFO_MINIMUM_FOCUS_DISTANCE).
+     */
     val focusDistance: Float = 0f,
     /** ISO sensitivity (0 = auto). */
     val iso: Int = 0,
@@ -222,14 +268,6 @@ data class StreamConfig(
     val exposureTimeUs: Long = 0,
     /** Whether the rear flash LED is on as a torch. */
     val flashTorchEnabled: Boolean = false,
-    /**
-     * When true, the outgoing stream is capped to [fps]: any extra frames
-     * the camera sensor produces on top of [fps] are dropped before being
-     * forwarded to the PC. When false (default) every frame produced by
-     * the sensor is forwarded, even when the sensor runs faster than the
-     * user-selected [fps] (e.g. user picks 60fps and the sensor delivers 64).
-     */
-    val limitFps: Boolean = false,
     /**
      * When true, every outgoing frame is rotated an additional 180° on top of
      * the rotation already implied by [orientation]. This is independent from

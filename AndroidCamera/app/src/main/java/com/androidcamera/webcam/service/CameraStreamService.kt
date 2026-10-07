@@ -158,7 +158,9 @@ class CameraStreamService : LifecycleService() {
                         streamServer = StreamHttpServer(
                             port,
                             cameraController.frameBroker,
-                            { preferences.streamConfig() }
+                            // The live settings: the saved ones may not be what this
+                            // camera supports (e.g. 60 fps saved, 30 fps in use).
+                            { cameraController.currentConfig() }
                         ).also { it.start() }
                     }
                 }
@@ -349,13 +351,9 @@ class CameraStreamService : LifecycleService() {
             instanceRef?.get()?.cameraController?.setFlashTorch(enabled)
         }
 
-        /**
-         * Toggle the outgoing-stream FPS cap. See
-         * [CameraStreamController.setLimitFps] for the contract.
-         */
-        fun setLimitFps(enabled: Boolean) {
-            instanceRef?.get()?.cameraController?.setLimitFps(enabled)
-        }
+        /** Pinch zoom step on the live session; returns the new linear zoom (see the controller). */
+        fun pinchZoom(scaleFactor: Float): Float? =
+            instanceRef?.get()?.cameraController?.pinchZoom(scaleFactor)
 
         /**
          * Switch the active camera (lens) while streaming is live. The

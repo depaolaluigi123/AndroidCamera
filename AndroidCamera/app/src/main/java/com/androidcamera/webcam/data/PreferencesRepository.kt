@@ -3,11 +3,11 @@ package com.androidcamera.webcam.data
 import android.content.Context
 import com.androidcamera.webcam.model.AppLanguage
 import com.androidcamera.webcam.model.AppThemeMode
+import com.androidcamera.webcam.model.AspectRatio
 import com.androidcamera.webcam.model.ConnectionMode
 import com.androidcamera.webcam.model.JpegQuality
 import com.androidcamera.webcam.model.StreamConfig
 import com.androidcamera.webcam.model.StreamFormat
-import com.androidcamera.webcam.model.StreamFps
 import com.androidcamera.webcam.model.StreamOrientation
 import com.androidcamera.webcam.model.StreamResolution
 
@@ -25,6 +25,10 @@ class PreferencesRepository(context: Context) {
         // around a value that no longer has a UI surface.
         if (prefs.contains(KEY_FRAME_BATCH_SIZE)) {
             prefs.edit().remove(KEY_FRAME_BATCH_SIZE).apply()
+        }
+        // "Limit FPS" was removed: the camera itself runs at the selected rate.
+        if (prefs.contains(KEY_LIMIT_FPS)) {
+            prefs.edit().remove(KEY_LIMIT_FPS).apply()
         }
     }
 
@@ -69,16 +73,32 @@ class PreferencesRepository(context: Context) {
         get() = AppLanguage.fromCode(prefs.getString(KEY_LANGUAGE, AppLanguage.ENGLISH.code)!!)
         set(value) = prefs.edit().putString(KEY_LANGUAGE, value.code).apply()
 
-    var streamResolution: StreamResolution
-        get() = StreamResolution.fromName(
-            prefs.getString(KEY_STREAM_RESOLUTION, StreamResolution.RES_480P.name)
-                ?: StreamResolution.RES_480P.name
-        )
-        set(value) = prefs.edit().putString(KEY_STREAM_RESOLUTION, value.name).apply()
+    /** Shape of the stream, 4:3 or 16:9 (the "16:9" checkbox). */
+    var streamAspect: AspectRatio
+        get() = if (prefs.getBoolean(KEY_STREAM_ASPECT_16_9, false)) AspectRatio.RATIO_16_9 else AspectRatio.RATIO_4_3
+        set(value) = prefs.edit().putBoolean(KEY_STREAM_ASPECT_16_9, value == AspectRatio.RATIO_16_9).apply()
 
-    var streamFps: StreamFps
-        get() = StreamFps.fromInt(prefs.getInt(KEY_STREAM_FPS, StreamFps.FPS_60.fps))
-        set(value) = prefs.edit().putInt(KEY_STREAM_FPS, value.fps).apply()
+    /**
+     * Resolution of the current [streamAspect]: each shape keeps its own choice. A 16:9
+     * resolution never chosen yet starts from the counterpart of the 4:3 one.
+     */
+    var streamResolution: StreamResolution
+        get() {
+            val saved4x3 = StreamResolution.fromName(prefs.getString(KEY_STREAM_RESOLUTION, null))
+                ?.takeIf { it.aspect == AspectRatio.RATIO_4_3 } ?: StreamResolution.DEFAULT
+            if (streamAspect == AspectRatio.RATIO_4_3) return saved4x3
+            return StreamResolution.fromName(prefs.getString(KEY_STREAM_RESOLUTION_16_9, null))
+                ?.takeIf { it.aspect == AspectRatio.RATIO_16_9 }
+                ?: saved4x3.counterpart(AspectRatio.RATIO_16_9)
+        }
+        set(value) {
+            val key = if (value.aspect == AspectRatio.RATIO_16_9) KEY_STREAM_RESOLUTION_16_9 else KEY_STREAM_RESOLUTION
+            prefs.edit().putString(key, value.name).apply()
+        }
+
+    var streamFps: Int
+        get() = prefs.getInt(KEY_STREAM_FPS, DEFAULT_FPS).takeIf { it > 0 } ?: DEFAULT_FPS
+        set(value) = prefs.edit().putInt(KEY_STREAM_FPS, value).apply()
 
     var streamOrientation: StreamOrientation
         get() = runCatching {
@@ -153,16 +173,8 @@ class PreferencesRepository(context: Context) {
         get() = prefs.getBoolean(KEY_FLASH_TORCH, false)
         set(value) = prefs.edit().putBoolean(KEY_FLASH_TORCH, value).apply()
 
-    /**
-     * When true, the outgoing stream is capped to the user-selected FPS;
-     * extra frames produced by the sensor are dropped before reaching the PC.
-     * When false, every frame from the sensor is forwarded (default behaviour).
-     */
-    var limitFps: Boolean
-        get() = prefs.getBoolean(KEY_LIMIT_FPS, false)
-        set(value) = prefs.edit().putBoolean(KEY_LIMIT_FPS, value).apply()
-
     fun streamConfig(): StreamConfig = StreamConfig(
+        aspect = streamAspect,
         resolution = streamResolution,
         fps = streamFps,
         orientation = streamOrientation,
@@ -176,7 +188,6 @@ class PreferencesRepository(context: Context) {
         iso = iso,
         exposureTimeUs = exposureTimeUs,
         flashTorchEnabled = flashTorchEnabled,
-        limitFps = limitFps,
         cameraId = selectedCameraId,
     )
 
@@ -189,6 +200,8 @@ class PreferencesRepository(context: Context) {
         private const val KEY_THEME = "theme_mode"
         private const val KEY_LANGUAGE = "language"
         private const val KEY_STREAM_RESOLUTION = "stream_resolution"
+        private const val KEY_STREAM_RESOLUTION_16_9 = "stream_resolution_16_9"
+        private const val KEY_STREAM_ASPECT_16_9 = "stream_aspect_16_9"
         private const val KEY_STREAM_FPS = "stream_fps"
         private const val KEY_STREAM_ORIENTATION = "stream_orientation"
         private const val KEY_LINEAR_ZOOM = "linear_zoom"
@@ -204,7 +217,9 @@ class PreferencesRepository(context: Context) {
         private const val KEY_ISO = "iso"
         private const val KEY_EXPOSURE_TIME_US = "exposure_time_us"
         private const val KEY_FLASH_TORCH = "flash_torch"
+        /** Removed setting, deleted from existing installs. */
         private const val KEY_LIMIT_FPS = "limit_fps"
+        const val DEFAULT_FPS = 30
         const val DEFAULT_PORT = 2743
     }
 }

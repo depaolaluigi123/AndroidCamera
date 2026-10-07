@@ -33,9 +33,9 @@
     <string name="format_yuv_hint">Streaming YUV a bassa latenza. Sul PC usa AndroidCameraLinuxGui (Abilita per OBS), poi in OBS scegli questo telefono dal nome.</string>
     <string name="resolution_label">Risoluzione</string>
     <string name="fps_label">Frame rate (FPS)</string>
-    <string name="fps_hint">Questo valore è una richiesta al sensore della fotocamera per ottenere il numero di frame al secondo scelto. Il sensore sceglie autonomamente il valore supportato più vicino, quindi il frame rate effettivo potrebbe essere leggermente diverso da quello selezionato.</string>
-    <string name="limit_fps_label">Limita FPS</string>
-    <string name="limit_fps_hint">Se spuntato, lo stream inviato al computer viene limitato al numero di FPS scelto sopra: gli eventuali frame extra prodotti dal sensore vengono scartati. Se non spuntato, vengono inoltrati al computer tutti i frame prodotti dalla fotocamera (comportamento predefinito).</string>
+    <string name="fps_hint">Sono elencati solo i frame rate che la fotocamera selezionata può mantenere costanti alla risoluzione scelta; la fotocamera viene impostata per lavorare esattamente al valore scelto.</string>
+    <string name="aspect_wide_format">Inquadratura %1$s</string>
+    <string name="aspect_wide_hint_format">Lo stream e l\'anteprima sono in %1$s e l\'elenco mostra le risoluzioni %1$s. Disattivata: %2$s. Sono elencate solo le risoluzioni supportate dalla fotocamera selezionata.</string>
     <string name="rotate_180_label">Ruota di 180°</string>
     <string name="rotate_180_hint">Aggiunge una rotazione extra di 180° ad ogni frame in uscita, sopra l\'orientamento selezionato sopra. Selezionabile anche durante lo streaming: il cambio ha effetto dal frame successivo, senza riavviare il servizio.</string>
     <string name="orientation_label">Orientamento telecamera</string>
@@ -93,6 +93,7 @@
 
     <!-- Manual focus controls -->
     <string name="manual_focus_label">Messa a fuoco manuale</string>
+    <string name="manual_focus_unavailable">Messa a fuoco manuale (non disponibile: obiettivo a fuoco fisso)</string>
     <string name="manual_adjustments_label">Regolazioni manuali (ISO, esposizione)</string>
     <string name="focus_label">Fuoco</string>
     <string name="focus_increase">Aumenta fuoco</string>

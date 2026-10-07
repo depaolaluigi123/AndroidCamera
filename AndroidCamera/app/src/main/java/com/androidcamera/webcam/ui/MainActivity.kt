@@ -12,7 +12,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.annotation.SuppressLint
 import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
@@ -47,12 +49,14 @@ import com.androidcamera.webcam.model.ConnectionMode
 import com.androidcamera.webcam.model.JpegQuality
 import com.androidcamera.webcam.model.ServiceUiState
 import com.androidcamera.webcam.model.StreamConfig
-import com.androidcamera.webcam.model.StreamFps
+import com.androidcamera.webcam.model.AspectRatio
 import com.androidcamera.webcam.model.StreamFormat
 import com.androidcamera.webcam.model.StreamOrientation
 import com.androidcamera.webcam.model.StreamResolution
 import com.androidcamera.webcam.service.CameraStreamService
 import com.androidcamera.webcam.theme.ThemeManager
+import com.androidcamera.webcam.camera.CameraCapabilities
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 /**
@@ -98,10 +102,10 @@ class MainActivity : AppCompatActivity() {
      *  the "Manual adjustments" checkbox we save it, flip this flag and show
      *  the ISO/exposure spinner panel. */
     private var manualAdjustmentsEnabled: Boolean = false
-    /** Mirrors [preferences.limitFps]. When true, the running session drops
-     *  sensor frames that arrive faster than the user-selected FPS so the
-     *  stream forwarded to the PC never exceeds that rate. */
-    private var limitFpsEnabled: Boolean = false
+    /** Resolutions offered for the selected camera and shape (see [refreshVideoOptions]). */
+    private var resolutionOptions: List<StreamResolution> = emptyList()
+    /** Frame rates offered for the selected camera and resolution. */
+    private var fpsOptions: List<Int> = emptyList()
     /** Mirrors [webcamSettings.current().rotate180]. When true, every
      *  outgoing frame is rotated an additional 180° on top of the rotation
      *  implied by the orientation spinner. Editable mid-stream. Not
@@ -139,13 +143,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val focusTouchListener = View.OnTouchListener { v, event ->
-        // Treat a tap (down→up without drag) as a focus request on the preview.
-        if (event.action == MotionEvent.ACTION_UP) {
-            handleFocusTap(v, event.x, event.y)
-        }
-        true
-    }
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -153,6 +150,7 @@ class MainActivity : AppCompatActivity() {
         val cameraGranted = result[Manifest.permission.CAMERA] == true
         if (cameraGranted) {
             setupCameraSpinner()
+            refreshCameraDependentUi()
             if (!startupPermissionRequest) {
                 startServiceInternal()
             }
@@ -312,12 +310,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSpinners() {
-        refreshResolutionSpinnerLabels()
-        binding.fpsSpinner.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            StreamFps.entries.map { "${it.fps}" }
-        )
         binding.orientationSpinner.adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_dropdown_item,
@@ -431,6 +423,7 @@ class MainActivity : AppCompatActivity() {
     private fun onCameraSpinnerChanged() {
         val camera = selectedCamera() ?: return
         publish { cfg -> cfg.copy(cameraId = camera.id) }
+        refreshCameraDependentUi()
         refreshObsInfo()
         // Keep the fullscreen mirror in sync without re-firing its
         // listener (the call is gated by ``updatingUi``).
@@ -457,17 +450,96 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun refreshResolutionSpinnerLabels() {
-        val orientation = preferences.streamOrientation
-        val selected = binding.resolutionSpinner.selectedItemPosition.coerceAtLeast(0)
-        binding.resolutionSpinner.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_dropdown_item,
-            StreamResolution.entries.map { it.labelFor(orientation) }
-        )
-        binding.resolutionSpinner.setSelection(
-            selected.coerceIn(0, StreamResolution.entries.lastIndex)
-        )
+    /** Everything that depends on the selected camera: video options, manual focus, flash. */
+    private fun refreshCameraDependentUi() {
+        refreshVideoOptions()
+        applyManualFocusAvailability()
+        applyFlashAvailability()
+    }
+
+    /**
+     * Fill the resolution and FPS spinners with what the selected camera can do: the
+     * resolutions of the selected shape it supports, and the frame rates it can hold at the
+     * chosen resolution. The saved preferences are the targets; when the camera cannot do
+     * them, the closest values are used for this camera only (the preferences are kept).
+     */
+    private fun refreshVideoOptions() {
+        val cfg = webcamSettings.current()
+        val cameraId = selectedCamera()?.id ?: cfg.cameraId
+        val aspect = preferences.streamAspect
+        resolutionOptions = cameraId?.let { CameraCapabilities.supportedResolutions(this, it, aspect) }
+            .orEmpty().ifEmpty { StreamResolution.of(aspect) }
+        val wanted = preferences.streamResolution
+        val resolution = if (wanted in resolutionOptions) wanted
+            else resolutionOptions.filter { it.pixels <= wanted.pixels }.maxByOrNull { it.pixels }
+                ?: resolutionOptions.minByOrNull { it.pixels } ?: wanted
+        fpsOptions = cameraId?.let { CameraCapabilities.frameRateOptions(this, it, resolution) }
+            .orEmpty().ifEmpty { listOf(preferences.streamFps) }
+        val wantedFps = preferences.streamFps
+        val fps = if (wantedFps in fpsOptions) wantedFps else fpsOptions.minByOrNull { kotlin.math.abs(it - wantedFps) }!!
+
+        val previousUpdating = updatingUi
+        updatingUi = true
+        // A new adapter makes the spinner report a selection later, outside updatingUi:
+        // replace it only when the entries really change.
+        setSpinnerEntries(binding.resolutionSpinner, resolutionOptions.map { it.labelFor(cfg.orientation) })
+        selectIfDifferent(binding.resolutionSpinner, resolutionOptions.indexOf(resolution))
+        setSpinnerEntries(binding.fpsSpinner, fpsOptions.map { "$it" })
+        selectIfDifferent(binding.fpsSpinner, fpsOptions.indexOf(fps))
+        binding.aspect16x9Checkbox.isChecked = aspect == AspectRatio.RATIO_16_9
+        updatingUi = previousUpdating
+        applyAspectLabels()
+
+        if (resolution != cfg.resolution || fps != cfg.fps || aspect != cfg.aspect) {
+            // Effective values for this camera, not persisted (see publish).
+            webcamSettings.update(cfg.copy(aspect = aspect, resolution = resolution, fps = fps))
+            if (!serviceRunning) previewController.updateStreamConfig(webcamSettings.current())
+        }
+    }
+
+    private fun setSpinnerEntries(spinner: android.widget.Spinner, labels: List<String>) {
+        @Suppress("UNCHECKED_CAST")
+        val current = spinner.adapter as? ArrayAdapter<String>
+        if (current != null && current.count == labels.size && (0 until current.count).all { current.getItem(it) == labels[it] }) return
+        spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, labels)
+    }
+
+    private fun selectIfDifferent(spinner: android.widget.Spinner, position: Int) {
+        if (position >= 0 && spinner.selectedItemPosition != position) spinner.setSelection(position, false)
+    }
+
+    /** "16:9" / "4:3" when the stream is horizontal, "9:16" / "3:4" when vertical. */
+    private fun applyAspectLabels() {
+        val portrait = webcamSettings.current().orientation.isPortrait
+        val wide = if (portrait) "9:16" else "16:9"
+        val standard = if (portrait) "3:4" else "4:3"
+        binding.aspect16x9Checkbox.text = getString(R.string.aspect_wide_format, wide)
+        binding.aspect16x9Hint.text = getString(R.string.aspect_wide_hint_format, wide, standard)
+    }
+
+    /**
+     * Manual focus only on cameras that can focus: on fixed-focus lenses the checkboxes are
+     * disabled, dimmed (their text colour is fixed, so a disabled one looked active) and say
+     * why, and manual focus is switched off.
+     */
+    private fun applyManualFocusAvailability() {
+        val cameraId = selectedCamera()?.id ?: return
+        val supported = CameraCapabilities.supportsManualFocus(this, cameraId)
+        val label = getString(if (supported) R.string.manual_focus_label else R.string.manual_focus_unavailable)
+        listOf(binding.manualFocusCheckbox, binding.manualFocusCheckboxFullscreen).forEach {
+            it.isEnabled = supported
+            it.alpha = if (supported) 1f else 0.5f
+            it.text = label
+        }
+        // Unchecking runs the checkbox listener, which turns manual focus off.
+        if (!supported && binding.manualFocusCheckbox.isChecked) binding.manualFocusCheckbox.isChecked = false
+    }
+
+    /** The flash button works only on cameras with a flash unit (not on every rear lens). */
+    private fun applyFlashAvailability() {
+        val hasFlash = selectedCamera()?.id?.let { CameraCapabilities.hasFlash(this, it) } ?: false
+        binding.btnFlash.isEnabled = hasFlash
+        binding.btnFlashFullscreen.isEnabled = hasFlash
     }
 
     private fun bindInitialState() {
@@ -480,24 +552,13 @@ class MainActivity : AppCompatActivity() {
         binding.orientationSpinner.setSelection(
             StreamOrientation.entries.indexOf(preferences.streamOrientation).coerceAtLeast(0)
         )
-        refreshResolutionSpinnerLabels()
-        binding.resolutionSpinner.setSelection(
-            StreamResolution.entries.indexOf(preferences.streamResolution).coerceAtLeast(0)
-        )
-        binding.fpsSpinner.setSelection(
-            StreamFps.entries.indexOf(preferences.streamFps).coerceAtLeast(0)
-        )
+        refreshCameraDependentUi()
         binding.streamFormatSpinner.setSelection(
             StreamFormat.entries.indexOf(preferences.streamFormat).coerceAtLeast(0)
         )
         binding.jpegQualitySpinner.setSelection(
             JpegQuality.entries.indexOf(preferences.jpegQuality).coerceAtLeast(0)
         )
-        // "Limit FPS" toggle: when checked, frames the sensor delivers
-        // above the user-selected FPS are dropped before reaching the
-        // PC. Defaults to off (legacy behaviour: forward every frame).
-        limitFpsEnabled = preferences.limitFps
-        binding.limitFpsCheckbox.isChecked = limitFpsEnabled
         // "Rotate 180°" toggle. Live, not persisted across process restarts —
         // the default is "off", matching the legacy behaviour.
         rotate180Enabled = webcamSettings.current().rotate180
@@ -632,19 +693,32 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        binding.aspect16x9Checkbox.setOnCheckedChangeListener { _, checked ->
+            if (updatingUi) return@setOnCheckedChangeListener
+            val aspect = if (checked) AspectRatio.RATIO_16_9 else AspectRatio.RATIO_4_3
+            preferences.streamAspect = aspect
+            // Each shape keeps its own saved resolution: switch to it.
+            publish { cfg -> cfg.copy(aspect = aspect, resolution = preferences.streamResolution) }
+            refreshVideoOptions()
+            applyPreviewOrientation()
+            refreshObsInfo()
+            restartPreviewIfIdle()
+        }
         binding.resolutionSpinner.onItemSelectedListener = spinnerListener {
-            val newResolution = StreamResolution.entries[
-                binding.resolutionSpinner.selectedItemPosition.coerceIn(0, StreamResolution.entries.lastIndex)
-            ]
+            val newResolution = resolutionOptions.getOrNull(binding.resolutionSpinner.selectedItemPosition)
+                ?: return@spinnerListener
+            if (newResolution == webcamSettings.current().resolution) return@spinnerListener
             publish { cfg -> cfg.copy(resolution = newResolution) }
+            // The frame rates the camera can hold depend on the resolution.
+            refreshVideoOptions()
             applyPreviewOrientation()
             refreshObsInfo()
             restartPreviewIfIdle()
         }
         binding.fpsSpinner.onItemSelectedListener = spinnerListener {
-            val newFps = StreamFps.entries[
-                binding.fpsSpinner.selectedItemPosition.coerceIn(0, StreamFps.entries.lastIndex)
-            ]
+            val newFps = fpsOptions.getOrNull(binding.fpsSpinner.selectedItemPosition)
+                ?: return@spinnerListener
+            if (newFps == webcamSettings.current().fps) return@spinnerListener
             publish { cfg -> cfg.copy(fps = newFps) }
             val cfg = webcamSettings.current()
             if (serviceRunning) {
@@ -661,8 +735,10 @@ class MainActivity : AppCompatActivity() {
                     StreamOrientation.entries.lastIndex
                 )
             ]
+            if (newOrientation == webcamSettings.current().orientation) return@spinnerListener
             publish { cfg -> cfg.copy(orientation = newOrientation) }
-            refreshResolutionSpinnerLabels()
+            // Resolution labels (960×1280 vs 1280×960) and 9:16 vs 16:9 wording.
+            refreshVideoOptions()
             applyPreviewOrientation()
             refreshObsInfo()
             restartPreviewIfIdle()
@@ -697,22 +773,6 @@ class MainActivity : AppCompatActivity() {
             restartPreviewIfIdle()
         }
 
-        // "Limit FPS" checkbox. When checked, the camera sensor keeps
-        // running at whatever rate it negotiated with the system, but
-        // only frames that arrive at or after the configured interval
-        // are forwarded to the broker (and therefore to the PC).
-        // Unchecked is the legacy behaviour: forward every frame.
-        val limitFpsListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
-            if (updatingUi) return@OnCheckedChangeListener
-            publish { cfg -> cfg.copy(limitFps = isChecked) }
-            limitFpsEnabled = isChecked
-            if (serviceRunning) {
-                CameraStreamService.setLimitFps(isChecked)
-            } else {
-                previewController.setLimitFps(isChecked)
-            }
-        }
-        binding.limitFpsCheckbox.setOnCheckedChangeListener(limitFpsListener)
         // "Rotate 180°" toggle: adds an extra 180° rotation on top of the
         // orientation spinner. Editable mid-stream — the change is propagated
         // to the running service via [CameraStreamService.updateStreamConfig]
@@ -790,20 +850,7 @@ class MainActivity : AppCompatActivity() {
                 binding.manualFocusCheckboxFullscreen.isChecked = isChecked
             }
             updatingUi = false
-            // When manual focus is enabled, disable tap-to-focus.
-            // When disabled, re-enable it.
-            if (isChecked) {
-                binding.previewView.setOnTouchListener(null)
-                binding.camera2PreviewView.setOnTouchListener(null)
-                binding.fullscreenPreviewView.setOnTouchListener(null)
-                binding.fullscreenCamera2PreviewView.setOnTouchListener(null)
-            } else {
-                // Re-attach tap-to-focus listeners
-                binding.previewView.setOnTouchListener(focusTouchListener)
-                binding.camera2PreviewView.setOnTouchListener(focusTouchListener)
-                binding.fullscreenPreviewView.setOnTouchListener(focusTouchListener)
-                binding.fullscreenCamera2PreviewView.setOnTouchListener(focusTouchListener)
-            }
+            // A tap keeps working: with manual focus it re-applies the chosen distance.
         }
         binding.manualFocusCheckbox.setOnCheckedChangeListener(manualFocusListener)
         binding.manualFocusCheckboxFullscreen.setOnCheckedChangeListener(manualFocusListener)
@@ -979,12 +1026,12 @@ class MainActivity : AppCompatActivity() {
         binding.btnFullscreenPreview.setOnClickListener { enterFullscreenPreview() }
         binding.btnExitFullscreen.setOnClickListener { exitFullscreenPreview() }
 
-        // Tap-to-focus — attach to all preview surfaces so focus works
-        // regardless of whether we're in normal or fullscreen mode.
-        binding.previewView.setOnTouchListener(focusTouchListener)
-        binding.camera2PreviewView.setOnTouchListener(focusTouchListener)
-        binding.fullscreenPreviewView.setOnTouchListener(focusTouchListener)
-        binding.fullscreenCamera2PreviewView.setOnTouchListener(focusTouchListener)
+        // Touch on every preview surface (normal and fullscreen, CameraX and Camera2):
+        // a tap focuses, two fingers pinch to zoom.
+        attachPreviewGestures(binding.previewView)
+        attachPreviewGestures(binding.camera2PreviewView)
+        attachPreviewGestures(binding.fullscreenPreviewView)
+        attachPreviewGestures(binding.fullscreenCamera2PreviewView)
 
         binding.deviceNameInput.doAfterTextChanged { text ->
             if (updatingUi) return@doAfterTextChanged
@@ -1054,6 +1101,81 @@ class MainActivity : AppCompatActivity() {
         }
 
     /**
+     * Touch handling of a preview, as in the camera app: a tap focuses at that point, two
+     * fingers pinch to zoom in or out. A gesture that used two fingers or moved never ends
+     * in a focus cycle. While two fingers are down the page does not scroll (with one
+     * finger it still does: a tap only acts on release).
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun attachPreviewGestures(view: View) {
+        val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
+        var downX = 0f
+        var downY = 0f
+        var isTap = false
+        // Distance between the first two fingers at the previous event (0 = no pinch).
+        // ScaleGestureDetector is not used: it ignores pinches narrower than ~27 mm.
+        var lastSpan = 0f
+        fun span(event: MotionEvent): Float =
+            kotlin.math.hypot(event.getX(0) - event.getX(1), event.getY(0) - event.getY(1))
+        view.setOnTouchListener { v, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.x
+                    downY = event.y
+                    isTap = true
+                }
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    isTap = false
+                    if (event.pointerCount >= 2) {
+                        lastSpan = span(event)
+                        v.parent?.requestDisallowInterceptTouchEvent(true)
+                    }
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (kotlin.math.abs(event.x - downX) > touchSlop ||
+                        kotlin.math.abs(event.y - downY) > touchSlop
+                    ) {
+                        isTap = false
+                    }
+                    if (event.pointerCount >= 2 && lastSpan > 0f) {
+                        val current = span(event)
+                        if (current > 0f) pinchZoom(current / lastSpan)
+                        lastSpan = current
+                    }
+                }
+                MotionEvent.ACTION_POINTER_UP -> if (event.pointerCount <= 2) {
+                    lastSpan = 0f
+                    v.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (isTap) handleFocusTap(v, event.x, event.y)
+                    lastSpan = 0f
+                    v.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    isTap = false
+                    lastSpan = 0f
+                    v.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+            }
+            true
+        }
+    }
+
+    /** One pinch step: zoom by [scaleFactor] and mirror the result on both zoom sliders. */
+    private fun pinchZoom(scaleFactor: Float) {
+        val linear = if (serviceRunning) CameraStreamService.pinchZoom(scaleFactor)
+            else previewController.pinchZoom(scaleFactor)
+        linear ?: return
+        val progress = (linear * 100f).roundToInt().coerceIn(0, 100)
+        updatingUi = true
+        binding.zoomSeekBar.progress = progress
+        binding.fullscreenZoomSeekBar.progress = progress
+        updatingUi = false
+        publish { cfg -> cfg.copy(linearZoom = linear) }
+    }
+
+    /**
      * Push a new [StreamConfig] to the shared store after persisting the
      * fields that need to survive a process restart. Centralised so the
      * Activity has exactly one code path that mutates state — every UI
@@ -1067,20 +1189,25 @@ class MainActivity : AppCompatActivity() {
         // process restart is intentionally a subset: connection mode,
         // device name, http port and the live config knobs the user
         // expects to come back to (resolution, fps, …).
-        preferences.streamResolution = next.resolution
-        preferences.streamFps = next.fps
-        preferences.streamOrientation = next.orientation
-        preferences.linearZoom = next.linearZoom
-        preferences.jpegQuality = next.jpegQuality
-        preferences.streamFormat = next.streamFormat
-        preferences.manualFocusEnabled = next.manualFocusEnabled
-        preferences.manualAdjustmentsEnabled = next.manualAdjustmentsEnabled
-        preferences.focusDistance = next.focusDistance
-        preferences.iso = next.iso
-        preferences.exposureTimeUs = next.exposureTimeUs
-        preferences.flashTorchEnabled = next.flashTorchEnabled
-        preferences.limitFps = next.limitFps
-        next.cameraId?.let { preferences.selectedCameraId = it }
+        // Only the fields that changed: the in-memory values may be the camera-specific
+        // reduction of the saved preference (see refreshVideoOptions), which must not
+        // overwrite it when another field changes.
+        if (next.resolution != previous.resolution) preferences.streamResolution = next.resolution
+        if (next.fps != previous.fps) preferences.streamFps = next.fps
+        if (next.aspect != previous.aspect) preferences.streamAspect = next.aspect
+        if (next.orientation != previous.orientation) preferences.streamOrientation = next.orientation
+        if (next.linearZoom != previous.linearZoom) preferences.linearZoom = next.linearZoom
+        if (next.jpegQuality != previous.jpegQuality) preferences.jpegQuality = next.jpegQuality
+        if (next.streamFormat != previous.streamFormat) preferences.streamFormat = next.streamFormat
+        if (next.manualFocusEnabled != previous.manualFocusEnabled) preferences.manualFocusEnabled = next.manualFocusEnabled
+        if (next.manualAdjustmentsEnabled != previous.manualAdjustmentsEnabled) {
+            preferences.manualAdjustmentsEnabled = next.manualAdjustmentsEnabled
+        }
+        if (next.focusDistance != previous.focusDistance) preferences.focusDistance = next.focusDistance
+        if (next.iso != previous.iso) preferences.iso = next.iso
+        if (next.exposureTimeUs != previous.exposureTimeUs) preferences.exposureTimeUs = next.exposureTimeUs
+        if (next.flashTorchEnabled != previous.flashTorchEnabled) preferences.flashTorchEnabled = next.flashTorchEnabled
+        if (next.cameraId != previous.cameraId) next.cameraId?.let { preferences.selectedCameraId = it }
         // Publish the in-memory snapshot last: by the time observers
         // receive the new value, the underlying preferences already
         // agree with it, so a config-restart in the middle of the
@@ -1099,7 +1226,6 @@ class MainActivity : AppCompatActivity() {
         flashOn = snapshot.flashTorchEnabled
         manualFocusEnabled = snapshot.manualFocusEnabled
         manualAdjustmentsEnabled = snapshot.manualAdjustmentsEnabled
-        limitFpsEnabled = snapshot.limitFps
         rotate180Enabled = snapshot.rotate180
     }
 
@@ -1115,12 +1241,12 @@ class MainActivity : AppCompatActivity() {
     private fun applyConfigToControls(cfg: StreamConfig) {
         updatingUi = true
         // Spinners
-        val resPos = StreamResolution.entries.indexOf(cfg.resolution).coerceAtLeast(0)
-        if (binding.resolutionSpinner.selectedItemPosition != resPos) {
+        val resPos = resolutionOptions.indexOf(cfg.resolution)
+        if (resPos >= 0 && binding.resolutionSpinner.selectedItemPosition != resPos) {
             binding.resolutionSpinner.setSelection(resPos, false)
         }
-        val fpsPos = StreamFps.entries.indexOf(cfg.fps).coerceAtLeast(0)
-        if (binding.fpsSpinner.selectedItemPosition != fpsPos) {
+        val fpsPos = fpsOptions.indexOf(cfg.fps)
+        if (fpsPos >= 0 && binding.fpsSpinner.selectedItemPosition != fpsPos) {
             binding.fpsSpinner.setSelection(fpsPos, false)
         }
         val orientPos = StreamOrientation.entries.indexOf(cfg.orientation).coerceAtLeast(0)
@@ -1141,15 +1267,12 @@ class MainActivity : AppCompatActivity() {
             binding.cameraSpinner.setSelection(camPos, false)
         }
         // Checkboxes (flash is a Button, not a CheckBox — update its UI separately)
-        if (binding.manualFocusCheckbox.isChecked != cfg.manualFocusEnabled) {
-            binding.manualFocusCheckbox.isChecked = cfg.manualFocusEnabled
+        // Main + fullscreen mirrors.
+        listOf(binding.manualFocusCheckbox, binding.manualFocusCheckboxFullscreen).forEach {
+            if (it.isChecked != cfg.manualFocusEnabled) it.isChecked = cfg.manualFocusEnabled
         }
-        if (binding.manualAdjustmentsCheckbox.isChecked != cfg.manualAdjustmentsEnabled) {
-            binding.manualAdjustmentsCheckbox.isChecked = cfg.manualAdjustmentsEnabled
-        }
-        // Limit FPS checkbox (mirror)
-        if (binding.limitFpsCheckbox.isChecked != cfg.limitFps) {
-            binding.limitFpsCheckbox.isChecked = cfg.limitFps
+        listOf(binding.manualAdjustmentsCheckbox, binding.manualAdjustmentsCheckboxFullscreen).forEach {
+            if (it.isChecked != cfg.manualAdjustmentsEnabled) it.isChecked = cfg.manualAdjustmentsEnabled
         }
         // Rotate 180° checkbox (main + fullscreen mirror)
         if (binding.rotate180Checkbox.isChecked != cfg.rotate180) {
@@ -1239,12 +1362,9 @@ class MainActivity : AppCompatActivity() {
             cfg ->
             cfg.copy(
                 cameraId = camera.id,
-                resolution = StreamResolution.entries[
-                    binding.resolutionSpinner.selectedItemPosition.coerceIn(0, StreamResolution.entries.lastIndex)
-                ],
-                fps = StreamFps.entries[
-                    binding.fpsSpinner.selectedItemPosition.coerceIn(0, StreamFps.entries.lastIndex)
-                ],
+                resolution = resolutionOptions.getOrNull(binding.resolutionSpinner.selectedItemPosition)
+                    ?: cfg.resolution,
+                fps = fpsOptions.getOrNull(binding.fpsSpinner.selectedItemPosition) ?: cfg.fps,
                 orientation = StreamOrientation.entries[
                     binding.orientationSpinner.selectedItemPosition.coerceIn(
                         0,
@@ -1253,7 +1373,6 @@ class MainActivity : AppCompatActivity() {
                 ],
                 linearZoom = (binding.zoomSeekBar.progress / 100f).coerceIn(0f, 1f),
                 deviceName = deviceName,
-                limitFps = limitFpsEnabled,
             )
         }
         previewController.stop()
@@ -1709,15 +1828,7 @@ class MainActivity : AppCompatActivity() {
         binding.fpsSpinner.isEnabled = controlsEnabled
         binding.orientationSpinner.isEnabled = controlsEnabled
         binding.streamFormatSpinner.isEnabled = controlsEnabled
-        // "Limit FPS" must stay locked while streaming: toggling the gate
-        // mid-stream would silently flip between dropping extra sensor frames
-        // and forwarding every frame, and that decision is something the
-        // user should make before pressing "Start webcam service". Lock +
-        // fade so it is visually obvious the control is intentionally
-        // disabled, mirroring the JPEG-quality treatment in
-        // applyStreamFormatUiState.
-        binding.limitFpsCheckbox.isEnabled = controlsEnabled
-        binding.limitFpsCheckbox.alpha = if (controlsEnabled) 1f else 0.4f
+        binding.aspect16x9Checkbox.isEnabled = controlsEnabled
         // JPEG quality is meaningful only in JPEG mode (locked + faded in YUV).
         applyStreamFormatUiState()
         // Zoom stays available while streaming so the user can reframe live.
@@ -1728,8 +1839,7 @@ class MainActivity : AppCompatActivity() {
         // capture-request options via Camera2CameraControl (no rebind, the
         // analysis keeps streaming). The fullscreen overlay mirrors each
         // control so the user can keep tuning after entering fullscreen.
-        binding.manualFocusCheckbox.isEnabled = true
-        binding.manualFocusCheckboxFullscreen.isEnabled = true
+        applyManualFocusAvailability()
         binding.focusSeekBar.isEnabled = true
         binding.focusSeekBarFullscreen.isEnabled = true
         binding.btnFocusMinus.isEnabled = true
@@ -1740,19 +1850,7 @@ class MainActivity : AppCompatActivity() {
         binding.isoSpinnerFullscreen.isEnabled = true
         binding.exposureSpinner.isEnabled = true
         binding.exposureSpinnerFullscreen.isEnabled = true
-        // Flash button enabled only for rear cameras. While streaming we ask
-        // the service which lens is active; otherwise we use the idle preview
-        // controller. This avoids the spinner showing "Flash Off" greyed out
-        // when the user picks a rear lens but the previewController still
-        // points at a front-facing device (e.g. immediately after a camera
-        // switch).
-        val isRearCamera = if (state.isRunning) {
-            CameraStreamService.isActiveCameraRear()
-        } else {
-            previewController.isRearCamera()
-        }
-        binding.btnFlash.isEnabled = isRearCamera
-        binding.btnFlashFullscreen.isEnabled = isRearCamera
+        applyFlashAvailability()
 
         if (state.isRunning) {
             val label = state.camerasInUseLabel.ifBlank {

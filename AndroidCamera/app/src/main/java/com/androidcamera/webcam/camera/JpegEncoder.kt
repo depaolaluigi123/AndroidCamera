@@ -56,6 +56,18 @@ object JpegEncoder {
      */
     private val hwAvailable: Boolean? by lazy { probe() }
 
+    /** The HW encoder and its colour formats, looked up once. */
+    private val hwEncoderInfo: MediaCodecInfo? by lazy {
+        MediaCodecInfoSelector.findEncoder("image/jpeg")?.also {
+            Log.i(TAG, "HW JPEG: picked encoder=${it.name}")
+        }
+    }
+    private val hwColorFormats: Set<Int> by lazy {
+        hwEncoderInfo?.let { MediaCodecInfoSelector.colorFormats(it, "image/jpeg").toSet() }.orEmpty().also {
+            Log.i(TAG, "HW JPEG: supported color formats=$it")
+        }
+    }
+
     /**
      * Convenience accessor. May return null during first access (lazy)
      * or false if the HW encoder is provably absent or broken.
@@ -99,7 +111,9 @@ object JpegEncoder {
     ): ByteArray? {
         // MediaCodec JPEG encoder is available from API 30 (Android 11).
         // On older or broken devices we silently fall back to the SW path.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && width > 0 && height > 0) {
+        // hwAvailable is probed once: looking the encoder up (and logging) on every frame
+        // cost time on each frame of devices without one.
+        if (hwAvailable == true && width > 0 && height > 0) {
             val hw = try {
                 encodeHw(i420, width, height, quality)
             } catch (e: Exception) {
@@ -135,18 +149,8 @@ object JpegEncoder {
         height: Int,
         quality: Int
     ): ByteArray? {
-        val codecInfo = MediaCodecInfoSelector.findEncoder("image/jpeg")
-        if (codecInfo == null) {
-            Log.w(TAG, "HW JPEG: no image/jpeg encoder found in MediaCodecList")
-            return null
-        }
-        Log.i(
-            TAG,
-            "HW JPEG: picked encoder=${codecInfo.name} " +
-                "isVendor=${codecInfo.isVendor}"
-        )
-        val supported = MediaCodecInfoSelector.colorFormats(codecInfo, "image/jpeg").toSet()
-        Log.i(TAG, "HW JPEG: supported color formats=$supported")
+        val codecInfo = hwEncoderInfo ?: return null
+        val supported = hwColorFormats
         val colorFormat = when {
             MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible in supported ->
                 MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible
@@ -177,8 +181,9 @@ object JpegEncoder {
             // Legacy direct-feed path (SemiPlanar / Planar): pick the buffer
             // size that matches the requested colour format.
             val feed: ByteArray = when (colorFormat) {
+                // SemiPlanar is NV12: U before V (NV21, V before U, swapped red and blue).
                 MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar ->
-                    i420ToNv21(i420, width, height)
+                    i420ToNv12(i420, width, height)
                 else -> i420
             }
             return encodeHwDirect(codec, feed)
@@ -361,6 +366,19 @@ object JpegEncoder {
     /** Same I420→NV21 conversion used by the SW path; kept here for
      *  encapsulation so callers in the camera package do not need
      *  to carry their own copy. */
+    /** I420 → NV12 (Y plane, then interleaved U,V), the layout of COLOR_FormatYUV420SemiPlanar. */
+    private fun i420ToNv12(i420: ByteArray, width: Int, height: Int): ByteArray {
+        val ySize = width * height
+        val uvSize = ySize / 4
+        val nv12 = ByteArray(ySize + 2 * uvSize)
+        System.arraycopy(i420, 0, nv12, 0, ySize)
+        for (i in 0 until uvSize) {
+            nv12[ySize + i * 2] = i420[ySize + i]
+            nv12[ySize + i * 2 + 1] = i420[ySize + uvSize + i]
+        }
+        return nv12
+    }
+
     fun i420ToNv21(i420: ByteArray, width: Int, height: Int): ByteArray {
         val ySize = width * height
         val uvSize = ySize / 4

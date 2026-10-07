@@ -7,9 +7,11 @@ Trasforma le telecamere del telefono in webcam **YUV** OBS-ready tramite **USB**
 - Modalità Tethering USB + webcam virtuale V4L2 (consigliata per OBS)
 - Modalità IP / LAN usando l'indirizzo Wi‑Fi
 - Telecamera posteriore o anteriore
-- Risoluzione, FPS (15–60) e orientamento configurabili
+- Inquadratura 4:3 o 16:9 (3:4 / 9:16 in verticale), risoluzioni fino al 4K e orientamento
+- Vengono elencate solo le risoluzioni e gli FPS supportati dalla telecamera scelta
 - Nome telefono personalizzato mostrato in OBS (supporta più telefoni contemporaneamente)
-- Anteprima live nell'app durante lo streaming
+- Anteprima live nell'app durante lo streaming: tocca per mettere a fuoco, pizzica con due dita per lo zoom
+- Flash (torcia) che resta acceso durante il tap focus; messa a fuoco manuale solo sulle lenti che la supportano
 - Tema chiaro/scuro e lingua inglese/italiano
 - Notifica in primo piano durante lo streaming
 

@@ -33,9 +33,11 @@
     <string name="format_yuv_hint">Streams raw YUV for low latency. On the PC use AndroidCameraLinuxGui (Enable for OBS), then pick this phone by name in OBS.</string>
     <string name="resolution_label">Resolution</string>
     <string name="fps_label">Frame rate (FPS)</string>
-    <string name="fps_hint">This sends a request to the camera sensor for the chosen frame rate. The sensor picks the closest supported value on its own, so the actual frame rate may be slightly different from what you select here.</string>
-    <string name="limit_fps_label">Limit FPS</string>
-    <string name="limit_fps_hint">When checked, the stream forwarded to the computer is capped to the FPS value selected above: any extra frames produced by the camera sensor are dropped. When unchecked, every frame produced by the camera is forwarded (the default behaviour).</string>
+    <string name="fps_hint">Only the frame rates the selected camera can hold constant at the chosen resolution are listed; the camera is set to run exactly at the chosen value.</string>
+    <!-- Stream shape checkbox: %1$s is 16:9 (horizontal) or 9:16 (vertical). -->
+    <string name="aspect_wide_format">%1$s framing</string>
+    <!-- %1$s: wide shape (16:9 / 9:16); %2$s: standard shape (4:3 / 3:4). -->
+    <string name="aspect_wide_hint_format">The stream and the preview use %1$s and the list shows %1$s resolutions. Off: %2$s. Only the resolutions the selected camera supports are listed.</string>
     <string name="rotate_180_label">Rotate 180°</string>
     <string name="rotate_180_hint">Adds an extra 180° rotation to every outgoing frame on top of the orientation selected above. Editable while the stream is running — takes effect on the next frame, no service restart required.</string>
     <string name="orientation_label">Camera orientation</string>
@@ -93,6 +95,8 @@
 
     <!-- Manual focus controls -->
     <string name="manual_focus_label">Manual focus</string>
+    <!-- Manual focus checkbox of a camera whose lens cannot focus (fixed focus). -->
+    <string name="manual_focus_unavailable">Manual focus (not available: fixed-focus lens)</string>
     <string name="manual_adjustments_label">Manual adjustments (ISO, exposure)</string>
     <string name="focus_label">Focus</string>
     <string name="focus_increase">Increase focus</string>

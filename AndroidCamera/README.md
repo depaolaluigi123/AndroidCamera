@@ -7,9 +7,11 @@ Turns the phone cameras into an OBS-ready **YUV** webcam over **USB** or **IP (L
 - USB Tethering mode + virtual V4L2 webcam (recommended for OBS)
 - IP / LAN mode using the Wi‑Fi address
 - Rear or front camera
-- Configurable resolution, FPS (15–60), and orientation
+- 4:3 or 16:9 framing (3:4 / 9:16 in portrait), resolutions up to 4K, and orientation
+- Only the resolutions and frame rates the selected camera supports are listed
 - Custom phone name shown in OBS (supports multiple phones at once)
-- Live preview in the app while streaming
+- Live preview in the app while streaming: tap to focus, pinch with two fingers to zoom
+- Flash (torch) that stays on during tap-to-focus; manual focus only on lenses that can focus
 - Light / dark theme and English / Italian
 - Foreground notification while streaming
 

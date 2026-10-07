@@ -508,6 +508,23 @@
                 android:textColor="@color/color_text_secondary"
                 android:textSize="12sp" />
 
+            <!-- Stream shape: 4:3 or 16:9 (3:4 / 9:16 when vertical). Text set in code. -->
+            <CheckBox
+                android:id="@+id/aspect16x9Checkbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="@color/color_text_primary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/aspect16x9Hint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/color_text_secondary"
+                android:textSize="12sp" />
+
             <TextView
                 android:id="@+id/resolutionLabel"
                 android:layout_width="match_parent"
@@ -548,27 +565,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:text="@string/fps_hint"
-                android:textColor="@color/color_text_secondary"
-                android:textSize="12sp" />
-
-            <!-- Limit FPS checkbox: when checked, the outgoing stream is
-                 capped to the FPS value selected above; extra frames
-                 produced by the sensor are dropped before reaching the PC. -->
-            <CheckBox
-                android:id="@+id/limitFpsCheckbox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="@string/limit_fps_label"
-                android:textColor="@color/color_text_primary"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/limitFpsHint"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="@string/limit_fps_hint"
                 android:textColor="@color/color_text_secondary"
                 android:textSize="12sp" />
 
